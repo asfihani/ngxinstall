@@ -1,0 +1,43 @@
+#!/bin/bash
+read -p "Enter username   : " username
+read -p "Enter domainname : " domainname
+
+pass=$(pwgen -s -N 1 -cn 14)
+adduser ${username}
+echo "${username}:${pass}" | chpasswd
+mkdir -p /chroot/${username}
+jk_init -j /chroot/${username} basicshell editors extendedshell netutils ssh sftp scp basicid > /dev/null
+jk_jailuser -s /bin/bash -m -j /chroot/${username} ${username} > /dev/null
+mkdir -p /chroot/${username}/home/${username}/{public_html,logs}
+echo "${domainname}" > /chroot/${username}/home/${username}/public_html/index.html
+echo '<?php phpinfo(); ?>' > /chroot/${username}/home/${username}/public_html/info.php 
+chown -R ${username}:${username} /chroot/${username}/home/${username}/{public_html,logs}
+chmod 755  /chroot/${username}/home/${username} /chroot/${username}/home/${username}/{public_html,logs}
+
+## NGINX
+cp -p /etc/nginx/sites-enabled/vhost.tpl /etc/nginx/sites-enabled/${domainname}.conf
+sed -i "s/%%domainname%%/${domainname}/g" /etc/nginx/sites-enabled/${domainname}.conf
+sed -i "s/%%username%%/${username}/g" /etc/nginx/sites-enabled/${domainname}.conf
+systemctl restart nginx
+
+## PHP FPM ##
+
+cp -p /etc/php-fpm.d/fpm.tpl /etc/php-fpm.d/${domainname}.conf
+sed -i "s/%%domainname%%/${domainname}/g" /etc/php-fpm.d/${domainname}.conf
+sed -i "s/%%username%%/${username}/g" /etc/php-fpm.d/${domainname}.conf
+
+systemctl restart php-fpm
+
+## MySQL ##
+wp_pass=$(pwgen -s -N 1 -cn 14)
+cat > /tmp/create.sql <<EOF
+create database ${username}_wp;
+grant all privileges on ${username}_wp.* to ${username}_wp identified by '${wp_pass}';
+flush privileges;
+EOF
+mysql < /tmp/create.sql 
+rm -rf /tmp/create.sql
+
+echo -e "user: ${username}\npass: ${pass}"
+echo -e "db username: ${username}_wp\ndb pass: ${wp_pass}"
+
