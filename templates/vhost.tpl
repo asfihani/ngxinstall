@@ -8,11 +8,10 @@ server {
     error_log /var/log/nginx/%%domainname%%_error.log notice;
     
     include global/wordpress.conf;
-    #include global/wp_super_cache.conf;
+    include global/wp_super_cache.conf;
     
     location / {
-        #try_files /wp-content/cache/supercache/$http_host/$cache_uri/index.html $uri $uri/ /index.php?$args;
-        try_files $uri $uri/ /index.php?$args;
+        try_files /wp-content/cache/supercache/$http_host/$cache_uri/index.html $uri $uri/ /index.php?$args;
     }
 
     location ~ \.php$ {
@@ -40,11 +39,10 @@ server {
 #    ssl_certificate_key /etc/letsencrypt/live/%%domainname%%/privkey.pem;
 #    
 #    include global/wordpress.conf;
-#    #include global/wp_super_cache.conf;
+#    include global/wp_super_cache.conf;
 #
 #    location / {
-#        #try_files /wp-content/cache/supercache/$http_host/$cache_uri/index-https.html $uri $uri/ /index.php?$args;
-#        try_files $uri $uri/ /index.php?$args;
+#        try_files /wp-content/cache/supercache/$http_host/$cache_uri/index-https.html $uri $uri/ /index.php?$args;
 #    }
 #    
 #    location ~ \.php$ {
