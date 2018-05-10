@@ -25,7 +25,6 @@ yum -y install git wget vim-enhanced curl yum-utils gcc make unzip lsof telnet b
 yum -y install http://rpms.remirepo.net/enterprise/remi-release-7.rpm >> $log 2>&1
 printf "${CYAN}done.${NORMAL}\n"
 
-
 # download config files from git repository
 printf "${GREEN}▣▣ cloning config files from git repository...${NORMAL}"
 mkdir -p /root/tmp >> $log
@@ -70,17 +69,17 @@ chmod 755  /chroot/${USERNAME}/home/${USERNAME} /chroot/${USERNAME}/home/${USERN
 printf "${CYAN}done.${NORMAL}\n"
 
 printf "${GREEN}▣▣ configure nginx...${NORMAL}"
-cp -p /root/tmp/ngxinstall/repo/nginx.repo /etc/yum.repos.d/nginx.repo
+cp -p /root/tmp/ngxinstall/config/nginx.repo /etc/yum.repos.d/nginx.repo
 yum -y install nginx >> $log 2>&1
 mv /etc/nginx/nginx.conf{,.orig}
-cp -p /root/tmp/ngxinstall/conf/nginx.conf /etc/nginx/nginx.conf
-mkdir -p /etc/nginx/sites-enabled/ /etc/nginx/global/
-cp -p /root/tmp/ngxinstall/templates/vhost.tpl /etc/nginx/sites-enabled/${DOMAINNAME}.conf
+cp -p /root/tmp/ngxinstall/config/nginx.conf /etc/nginx/nginx.conf
+mkdir -p /etc/nginx/sites-enabled/ /etc/nginx/conf.d/ >> $log 2>&1
+cp -p /root/tmp/ngxinstall/config/vhost.tpl /etc/nginx/sites-enabled/${DOMAINNAME}.conf
 sed -i "s/%%domainname%%/${DOMAINNAME}/g" /etc/nginx/sites-enabled/${DOMAINNAME}.conf
 sed -i "s/%%username%%/${USERNAME}/g" /etc/nginx/sites-enabled/${DOMAINNAME}.conf
-cp -p /root/tmp/ngxinstall/templates/wordpress.tpl /etc/nginx/global/wordpress.conf
-cp -p /root/tmp/ngxinstall/templates/wp_super_cache.tpl /etc/nginx/global/wp_super_cache.conf 
+cp -p /root/tmp/ngxinstall/config/wordpress.tpl /etc/nginx/includes.d/wordpress.conf
+cp -p /root/tmp/ngxinstall/config/wp_super_cache.tpl /etc/nginx/includes.d/wp_super_cache.conf 
 openssl dhparam -dsaparam -out /etc/nginx/dhparam.pem 4096 >> $log 2>&1
-systemctl enable nginx
-systemctl start nginx
+systemctl enable nginx >> $log 2>&1
+systemctl start nginx >> $log 2>&1
 printf "${CYAN}done.${NORMAL}\n"
