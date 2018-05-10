@@ -1,2 +1,11 @@
 # ngxinstall
-A simple bash script to automate nginx with Wordpress installation
+A simple bash script to automate nginx with Wordpress installation.
+
+# installation
+wget https://raw.githubusercontent.com/asfihani/ngxinstall/master/installer.sh
+chmod +x installer.sh
+./installer.sh --domainname <domainname> --username <username> --email <email>
+
+i.e: ./installer.sh --domainname sg.svrpnr.net --username sg --email asfik@svrpnr.net
+
+enjoy!
