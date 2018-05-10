@@ -9,7 +9,5 @@ chmod +x installer.sh
 # usage
 `./installer.sh --domainname <domainname> --username <username> --email <email>`
 
-i.e: 
+# example
 `./installer.sh --domainname sg.svrpnr.net --username sg --email asfik@svrpnr.net`
-
-**Enjoy!**
