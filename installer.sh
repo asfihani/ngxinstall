@@ -1,10 +1,13 @@
 #!/bin/sh
-# set smartindent tabstop=4 shiftwidth=4 expandtab
-# ngxinstall-installer.sh
-# Copyright 2018 ServerPartners - http://svrpnr.net
-# Simple script to install nginx with Wordpress and WP Super Cache plugin.
-# User is jailed using chroot setup to improve security.
-# Comments, bugs, and improvement: asfik@svrpnr.net
+## vim: set expandtab sw=4 ts=4 sts=4:
+##
+## ngxinstall-installer.sh
+##   © Copyright 2018 ServerPartners 
+##      http://serverpartners.net
+##
+## Simple shell script to install nginx with Wordpress, user is jailed 
+## using chroot setup to improve security. Send bug report to asfik@svrpnr.net.
+##
 
 log=/root/ngxinstall-installer.log
 
@@ -64,7 +67,7 @@ printf "${GREEN}▣▣ installing packages...${NORMAL}"
 yum -y install epel-release > $log 2>&1
 yum -y install git wget vim-enhanced curl yum-utils gcc make unzip lsof telnet bind-utils postfix certbot shadow-utils sudo >> $log 2>&1
 yum -y install http://rpms.remirepo.net/enterprise/remi-release-7.rpm >> $log 2>&1
-printf "${CYAN}done.${NORMAL}\n"
+printf "${CYAN}done ✔.${NORMAL}\n"
 
 # download config files from git repository
 printf "${GREEN}▣▣ cloning config files from git repository...${NORMAL}"
@@ -72,7 +75,7 @@ mkdir -p /root/tmp >> $log
 cd /root/tmp 
 rm -rf ngxinstall
 git clone https://github.com/asfihani/ngxinstall.git >> $log 2>&1
-printf "${CYAN}done.${NORMAL}\n"
+printf "${CYAN}done ✔.${NORMAL}\n"
 
 # setup jailkit and account
 printf "${GREEN}▣▣ installing jailkit...${NORMAL}"
@@ -91,7 +94,7 @@ cat >> /etc/jailkit/jk_init.ini <<'EOF'
 comment = basic id command
 paths_w_setuid = /usr/bin/id
 EOF
-printf "${CYAN}done.${NORMAL}\n"
+printf "${CYAN}done ✔.${NORMAL}\n"
 
 # setup chroot for account
 printf "${GREEN}▣▣ configure account...${NORMAL}"
@@ -108,7 +111,7 @@ mkdir -p /chroot/${USERNAME}/home/${USERNAME}/{public_html,logs}
 echo '<?php phpinfo(); ?>' > /chroot/${USERNAME}/home/${USERNAME}/public_html/info.php 
 chown -R ${USERNAME}: /chroot/${USERNAME}/home/${USERNAME}/{public_html,logs}
 chmod 755  /chroot/${USERNAME}/home/${USERNAME} /chroot/${USERNAME}/home/${USERNAME}/{public_html,logs}
-printf "${CYAN}done.${NORMAL}\n"
+printf "${CYAN}done ✔.${NORMAL}\n"
 
 # configure nginx
 printf "${GREEN}▣▣ configure nginx...${NORMAL}"
@@ -125,7 +128,7 @@ cp -p /root/tmp/ngxinstall/config/wp_super_cache.tpl /etc/nginx/conf.d/wp_super_
 openssl dhparam -dsaparam -out /etc/nginx/dhparam.pem 4096 >> $log 2>&1
 systemctl enable nginx >> $log 2>&1
 systemctl start nginx >> $log 2>&1
-printf "${CYAN}done.${NORMAL}\n"
+printf "${CYAN}done ✔.${NORMAL}\n"
 
 # configure php-fpm
 printf "${GREEN}▣▣ configure php-fpm...${NORMAL}"
@@ -147,7 +150,7 @@ sed -i "s/%%domainname%%/${DOMAINNAME}/g" /etc/php-fpm.d/${DOMAINNAME}.conf
 sed -i "s/%%username%%/${USERNAME}/g" /etc/php-fpm.d/${DOMAINNAME}.conf
 systemctl enable php-fpm >> $log 2>&1
 systemctl start php-fpm >> $log 2>&1
-printf "${CYAN}done.${NORMAL}\n"
+printf "${CYAN}done ✔.${NORMAL}\n"
 
 # configure MariaDB
 printf "${GREEN}▣▣ configure MariaDB...${NORMAL}"
@@ -167,7 +170,7 @@ cat > ~/.my.cnf <<EOF
 [client]
 password = '${MYSQL_PASS}'
 EOF
-printf "${CYAN}done.${NORMAL}\n"
+printf "${CYAN}done ✔.${NORMAL}\n"
 
 # create MySQL database for Wordpress
 printf "${GREEN}▣▣ configure Wordpress database...${NORMAL}"
@@ -179,14 +182,14 @@ flush privileges;
 EOF
 mysql < /tmp/create.sql 
 rm -rf /tmp/create.sql
-printf "${CYAN}done.${NORMAL}\n"
+printf "${CYAN}done ✔.${NORMAL}\n"
 
 # installing WPCLI
 printf "${GREEN}▣▣ installing WPCLI...${NORMAL}"
 wget https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -O /tmp/wp >> $log 2>&1
 chmod 755 /tmp/wp >> $log 2>&1
 mv /tmp/wp /usr/local/bin/wp >> $log 2>&1
-printf "${CYAN}done.${NORMAL}\n"
+printf "${CYAN}done ✔.${NORMAL}\n"
 
 # install Wordpress
 printf "${GREEN}▣▣ installing Wordpress...${NORMAL}"
@@ -196,10 +199,10 @@ sudo -u ${USERNAME} bash -c "/usr/local/bin/wp core download" >> $log 2>&1
 sudo -u ${USERNAME} bash -c "/usr/local/bin/wp core config --dbname=${USERNAME}_wp --dbuser=${USERNAME}_wp --dbpass=${WP_PASS} --dbhost=localhost --dbprefix=wp_" >> $log 2>&1
 sudo -u ${USERNAME} bash -c "/usr/local/bin/wp core install --url=${DOMAINNAME} --title='Just another Wordpress site' --admin_user=${USERNAME} --admin_password=${ADMIN_PASS} --admin_email=${EMAIL}" >> $log 2>&1
 sudo -u ${USERNAME} bash -c "/usr/local/bin/wp plugin install really-simple-ssl wp-super-cache" >> $log 2>&1
-printf "${CYAN}done.${NORMAL}\n"
+printf "${CYAN}done ✔.${NORMAL}\n"
 
-# installing Letsencrypt
-printf "${GREEN}▣▣ installing Letsencrypt...${NORMAL}"
+# Configuring Let's Encrypt
+printf "${GREEN}▣▣ configuring Let's Encrypt...${NORMAL}"
 
 WEB_IP=$(dig +short ${DOMAINNAME})
 CURR_IP=$(curl -sSL http://cpanel.com/showip.cgi)
@@ -215,14 +218,22 @@ if [ "${WEB_IP}" == "${CURR_IP}" ]; then
     crontab /tmp/le.cron
     rm -rf /tmp/le.cron
     cd /chroot/${USERNAME}/home/${USERNAME}/public_html
-    printf "${CYAN}done.${NORMAL}\n"
+    printf "${CYAN}done ✔.${NORMAL}\n"
 else
-    printf "${RED}skipped, web IP address probably not pointed to this server${NORMAL}"
+    printf "${RED}skipped, web IP address probably not pointed to this server ⛔.${NORMAL}\n"
 fi
+
+# Configuring Postfix
+printf "${GREEN}▣▣ configuring Postfix...${NORMAL}"
+rpm -e --nodeps sendmail* >> $log 2>&1
+yum -y install postfix >> $log 2>&1
+systemctl enable postfix >> $log 2>&1
+systemctl start postfix >> $log 2>&1
+printf "${CYAN}done ✔.${NORMAL}\n"
 
 # print all details
 echo
-printf "===============================================================\n"
+printf "===========================================================================\n"
 printf "SFTP\n"
 printf "Domain name : ${DOMAINNAME}\n"
 printf "Username    : ${USERNAME}\n"
@@ -230,7 +241,7 @@ printf "Password    : ${PASSWORD}\n\n"
 printf "Wordpress\n"
 printf "Username    : ${USERNAME}\n"
 printf "Password    : ${WP_PASS}\n\n"
-printf "Don't forget to enable Really Simple SSL plugin if Letsencrypt available\n"
+printf "Don't forget to enable Really Simple SSL plugin if Let's Encrypt available\n"
 printf "and configure WP Super Cache as well. Enjoy!\n"
-printf "===============================================================\n"
+printf "===========================================================================\n"
 echo
