@@ -20,8 +20,7 @@ NORMAL="$(tput sgr0)"
 
 usage () {
     echo
-    printf "Usage: %s %s ${NORMAL}--domainname ${GREEN}<domainname>${NORMAL} ${NORMAL}--username ${GREEN}<username>${NORMAL} ${NORMAL}--email ${GREEN}<email>\n" "${CYAN}" $(basename "$0") 
-    printf "${NORMAL}"
+    printf "Usage: ${CYAN}./installer.sh ${NORMAL}--domainname ${GREEN}<domainname>${NORMAL} ${NORMAL}--username ${GREEN}<username>${NORMAL} ${NORMAL}--email ${GREEN}<email>${NORMAL}\n"
     echo 
 }
 
