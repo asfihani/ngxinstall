@@ -140,6 +140,7 @@ sed -i 's/^max_execution_time =.*/max_execution_time = 300/g' /etc/php.ini
 sed -i 's/^memory_limit =.*/memory_limit = 256M/g' /etc/php.ini
 sed -i 's/^upload_max_filesize =.*/upload_max_filesize = 64M/g' /etc/php.ini
 sed -i 's/^post_max_size =.*/post_max_size = 64M/g' /etc/php.ini
+sed -i 's/^;date.timezone =.*/date.timezone = "Asia/Jakarta"/g' /etc/php.ini
 sed -i 's/^;opcache.revalidate_freq=2/opcache.revalidate_freq=60/g' /etc/php.d/10-opcache.ini
 sed -i 's/^;opcache.fast_shutdown=0/opcache.fast_shutdown=1/g' /etc/php.d/10-opcache.ini
 mv /etc/php-fpm.d/www.conf{,.orig}
