@@ -62,11 +62,15 @@ done
 /sbin/setenforce 0
 sed -i 's/^SELINUX=enforcing/SELINUX=disabled/g' /etc/sysconfig/selinux
 
-# install necessary packages
-printf "${GREEN}▣ installing packages...${NORMAL}" 
+# install necessary packages and additional repositories
+printf "${GREEN}▣ installing EPEL repo...${NORMAL}" 
 yum -y install epel-release > $log 2>&1
-yum -y install git wget vim-enhanced curl yum-utils gcc make unzip lsof telnet bind-utils certbot shadow-utils sudo >> $log 2>&1
+printf "${CYAN}done ✔${NORMAL}\n"
+printf "${GREEN}▣ installing Remi repo...${NORMAL}" 
 yum -y install http://rpms.remirepo.net/enterprise/remi-release-7.rpm >> $log 2>&1
+printf "${CYAN}done ✔${NORMAL}\n"
+printf "${GREEN}▣ installing packages...${NORMAL}" 
+yum -y install git wget vim-enhanced curl yum-utils gcc make unzip lsof telnet bind-utils shadow-utils sudo >> $log 2>&1
 printf "${CYAN}done ✔${NORMAL}\n"
 
 # download config files from git repository
@@ -201,7 +205,12 @@ sudo -u ${USERNAME} bash -c "/usr/local/bin/wp core install --url=${DOMAINNAME} 
 sudo -u ${USERNAME} bash -c "/usr/local/bin/wp plugin install really-simple-ssl wp-super-cache" >> $log 2>&1
 printf "${CYAN}done ✔${NORMAL}\n"
 
-# Configuring Let's Encrypt
+# install Let's Encrypt certbot
+printf "${GREEN}▣ install Let's Encrypt certbot...${NORMAL}"
+yum -y install certbot >> $log 2>&1
+printf "${CYAN}done ✔${NORMAL}\n"
+
+# configuring Let's Encrypt
 printf "${GREEN}▣ configuring Let's Encrypt...${NORMAL}"
 
 WEB_IP=$(dig +short ${DOMAINNAME})
