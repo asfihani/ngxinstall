@@ -232,7 +232,7 @@ fi
 
 # Configuring Postfix
 printf "${GREEN}▣ configuring Postfix...${NORMAL}"
-rpm -e --nodeps sendmail* >> $log 2>&1
+rpm -e --nodeps sendmail sendmail-cf >> $log 2>&1
 yum -y install postfix >> $log 2>&1
 systemctl enable postfix >> $log 2>&1
 systemctl start postfix >> $log 2>&1
