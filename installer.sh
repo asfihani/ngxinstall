@@ -65,7 +65,7 @@ sed -i 's/^SELINUX=enforcing/SELINUX=disabled/g' /etc/sysconfig/selinux
 # install necessary packages
 printf "${GREEN}▣ installing packages...${NORMAL}" 
 yum -y install epel-release > $log 2>&1
-yum -y install git wget vim-enhanced curl yum-utils gcc make unzip lsof telnet bind-utils postfix certbot shadow-utils sudo >> $log 2>&1
+yum -y install git wget vim-enhanced curl yum-utils gcc make unzip lsof telnet bind-utils certbot shadow-utils sudo >> $log 2>&1
 yum -y install http://rpms.remirepo.net/enterprise/remi-release-7.rpm >> $log 2>&1
 printf "${CYAN}done ✔${NORMAL}\n"
 
@@ -98,7 +98,7 @@ printf "${CYAN}done ✔${NORMAL}\n"
 # setup chroot for account
 printf "${GREEN}▣ configuring account...${NORMAL}"
 mkdir /chroot >> $log 2>&1
-PASSWORD=$(</dev/urandom tr -dc '12345@#%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
+PASSWORD=$(</dev/urandom tr -dc '12345#%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
 adduser ${USERNAME}
 echo "${USERNAME}:${PASSWORD}" | chpasswd
 mkdir -p /chroot/${USERNAME}
@@ -132,7 +132,7 @@ printf "${CYAN}done ✔${NORMAL}\n"
 # configure php-fpm
 printf "${GREEN}▣ configuring php-fpm...${NORMAL}"
 yum-config-manager --enable remi-php72 >> $log 2>&1
-yum -y -q install php php-mysqlnd php-curl php-simplexml \
+yum -y install php php-mysqlnd php-curl php-simplexml \
 php-devel php-gd php-json php-pecl-mcrypt php-mbstring php-opcache php-pear \
 php-pecl-apcu php-pecl-geoip php-pecl-json-post php-pecl-memcache php-pecl-xmldiff \
 php-pecl-zip php-pspell php-soap php-tidy php-xml php-xmlrpc php-fpm >> $log 2>&1
@@ -154,10 +154,10 @@ printf "${CYAN}done ✔${NORMAL}\n"
 # configure MariaDB
 printf "${GREEN}▣ configuring MariaDB...${NORMAL}"
 cp -p /tmp/ngxinstall/config/mariadb.repo /etc/yum.repos.d/mariadb.repo
-yum -y -q install MariaDB-server MariaDB-client MariaDB-compat MariaDB-shared >> $log 2>&1
+yum -y install MariaDB-server MariaDB-client MariaDB-compat MariaDB-shared >> $log 2>&1
 systemctl enable mariadb >> $log 2>&1
 systemctl start mariadb >> $log 2>&1
-MYSQL_PASS==$(</dev/urandom tr -dc '12345@#%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
+MYSQL_PASS==$(</dev/urandom tr -dc '12345#%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
 mysqladmin -u root password "${MYSQL_PASS}"
 mysql -u root -p"${MYSQL_PASS}" -e "UPDATE mysql.user SET Password=PASSWORD('${MYSQL_PASS}') WHERE User='root'"
 mysql -u root -p"${MYSQL_PASS}" -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1')"
@@ -173,7 +173,7 @@ printf "${CYAN}done ✔${NORMAL}\n"
 
 # create MySQL database for Wordpress
 printf "${GREEN}▣ configuring Wordpress database...${NORMAL}"
-WP_PASS=$(</dev/urandom tr -dc '12345@#%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
+WP_PASS=$(</dev/urandom tr -dc '12345#%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
 cat > /tmp/create.sql <<EOF
 create database ${USERNAME}_wp;
 grant all privileges on ${USERNAME}_wp.* to ${USERNAME}_wp@localhost identified by '${WP_PASS}';
@@ -193,7 +193,7 @@ printf "${CYAN}done ✔${NORMAL}\n"
 # install Wordpress
 printf "${GREEN}▣ installing Wordpress...${NORMAL}"
 cd /chroot/${USERNAME}/home/${USERNAME}/public_html
-ADMIN_PASS=$(</dev/urandom tr -dc '12345@#%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
+ADMIN_PASS=$(</dev/urandom tr -dc '12345#%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
 sudo -u ${USERNAME} bash -c "/usr/local/bin/wp core download" >> $log 2>&1
 sudo -u ${USERNAME} bash -c "/usr/local/bin/wp core config --dbname=${USERNAME}_wp --dbuser=${USERNAME}_wp --dbpass=${WP_PASS} --dbhost=localhost --dbprefix=wp_" >> $log 2>&1
 sudo -u ${USERNAME} bash -c "/usr/local/bin/wp core install --url=${DOMAINNAME} --title='Just another Wordpress site' --admin_user=${USERNAME} --admin_password=${ADMIN_PASS} --admin_email=${EMAIL}" >> $log 2>&1
