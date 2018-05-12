@@ -91,33 +91,34 @@ if [ -x /usr/bin/firewall-cmd ]; then
 fi
 
 # install necessary packages and additional repositories
-printf "${green}▣ installing EPEL repo...${normal}" 
+echo
+printf "▣ ${cyan} installing EPEL repo...${normal}" 
 yum -y install epel-release > $log 2>&1
-printf "${cyan}done ✔${normal}\n"
-printf "${green}▣ installing Remi repo...${normal}" 
+printf "${green}done ✔${normal}\n"
+printf "▣ ${cyan} installing Remi repo...${normal}" 
 yum -y install http://rpms.remirepo.net/enterprise/remi-release-7.rpm >> $log 2>&1
-printf "${cyan}done ✔${normal}\n"
-printf "${green}▣ installing packages...${normal}" 
+printf "${green}done ✔${normal}\n"
+printf "▣ ${cyan} installing packages...${normal}" 
 yum -y install git wget vim-enhanced curl yum-utils gcc make unzip lsof telnet bind-utils shadow-utils sudo >> $log 2>&1
-printf "${cyan}done ✔${normal}\n"
+printf "${green}done ✔${normal}\n"
 
 # install Postfix
-printf "${green}▣ installing Postfix...${normal}"
+printf "▣ ${cyan} installing Postfix...${normal}"
 rpm -e --nodeps sendmail sendmail-cf >> $log 2>&1
 yum -y install postfix >> $log 2>&1
 systemctl enable postfix >> $log 2>&1
 systemctl start postfix >> $log 2>&1
-printf "${cyan}done ✔${normal}\n"
+printf "${green}done ✔${normal}\n"
 
 # download config files from git repository
-printf "${green}▣ cloning config from git...${normal}"
+printf "▣ ${cyan} cloning config from git...${normal}"
 cd /tmp 
 rm -rf ngxinstall
 git clone https://github.com/asfihani/ngxinstall.git >> $log 2>&1
-printf "${cyan}done ✔${normal}\n"
+printf "${green}done ✔${normal}\n"
 
 # setup jailkit and account
-printf "${green}▣ installing jailkit...${normal}"
+printf "▣ ${cyan} installing jailkit...${normal}"
 cd /tmp
 rm -rf jailkit-2.19.tar.gz jailkit-2.19
 wget http://olivier.sessink.nl/jailkit/jailkit-2.19.tar.gz  >> $log 2>&1
@@ -131,10 +132,10 @@ cat >> /etc/jailkit/jk_init.ini <<'EOF'
 comment = basic id command
 paths_w_setuid = /usr/bin/id
 EOF
-printf "${cyan}done ✔${normal}\n"
+printf "${green}done ✔${normal}\n"
 
 # setup chroot for account
-printf "${green}▣ configuring account...${normal}"
+printf "▣ ${cyan} configuring account...${normal}"
 mkdir /chroot >> $log 2>&1
 password=$(</dev/urandom tr -dc '12345#%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
 adduser ${username}
@@ -146,10 +147,10 @@ mkdir -p /chroot/${username}/home/${username}/{public_html,logs}
 echo '<?php phpinfo(); ?>' > /chroot/${username}/home/${username}/public_html/info.php 
 chown -R ${username}: /chroot/${username}/home/${username}/{public_html,logs}
 chmod 755  /chroot/${username}/home/${username} /chroot/${username}/home/${username}/{public_html,logs}
-printf "${cyan}done ✔${normal}\n"
+printf "${green}done ✔${normal}\n"
 
 # configure nginx
-printf "${green}▣ configuring nginx...${normal}"
+printf "▣ ${cyan} configuring nginx...${normal}"
 cp -p /tmp/ngxinstall/config/nginx.repo /etc/yum.repos.d/nginx.repo
 yum -y install nginx >> $log 2>&1
 mv /etc/nginx/nginx.conf{,.orig}
@@ -163,19 +164,19 @@ cp -p /tmp/ngxinstall/config/wp_super_cache.tpl /etc/nginx/conf.d/wp_super_cache
 openssl dhparam -dsaparam -out /etc/nginx/dhparam.pem 4096 >> $log 2>&1
 systemctl enable nginx >> $log 2>&1
 systemctl start nginx >> $log 2>&1
-printf "${cyan}done ✔${normal}\n"
+printf "${green}done ✔${normal}\n"
 
 # installing php 7.2
-printf "${green}▣ installing PHP 7.2...${normal}"
+printf "▣ ${cyan} installing PHP 7.2...${normal}"
 yum-config-manager --enable remi-php72 >> $log 2>&1
 yum -y install php php-mysqlnd php-curl php-simplexml \
 php-devel php-gd php-json php-pecl-mcrypt php-mbstring php-opcache php-pear \
 php-pecl-apcu php-pecl-geoip php-pecl-json-post php-pecl-memcache php-pecl-xmldiff \
 php-pecl-zip php-pspell php-soap php-tidy php-xml php-xmlrpc php-fpm >> $log 2>&1
-printf "${cyan}done ✔${normal}\n"
+printf "${green}done ✔${normal}\n"
 
 # configure php-fpm
-printf "${green}▣ configuring php-fpm...${normal}"
+printf "▣ ${cyan} configuring php-fpm...${normal}"
 sed -i 's/^max_execution_time =.*/max_execution_time = 300/g' /etc/php.ini
 sed -i 's/^memory_limit =.*/memory_limit = 256M/g' /etc/php.ini
 sed -i 's/^upload_max_filesize =.*/upload_max_filesize = 64M/g' /etc/php.ini
@@ -190,18 +191,18 @@ sed -i "s/%%domainname%%/${domainname}/g" /etc/php-fpm.d/${domainname}.conf
 sed -i "s/%%username%%/${username}/g" /etc/php-fpm.d/${domainname}.conf
 systemctl enable php-fpm >> $log 2>&1
 systemctl start php-fpm >> $log 2>&1
-printf "${cyan}done ✔${normal}\n"
+printf "${green}done ✔${normal}\n"
 
 # install MariaDB
-printf "${green}▣ installing MariaDB...${normal}"
+printf "▣ ${cyan} installing MariaDB...${normal}"
 cp -p /tmp/ngxinstall/config/mariadb.repo /etc/yum.repos.d/mariadb.repo
 yum -y install MariaDB-server MariaDB-client MariaDB-compat MariaDB-shared >> $log 2>&1
 systemctl enable mariadb >> $log 2>&1
 systemctl start mariadb >> $log 2>&1
-printf "${cyan}done ✔${normal}\n"
+printf "${green}done ✔${normal}\n"
 
 # configure MariaDB
-printf "${green}▣ configuring MariaDB...${normal}"
+printf "▣ ${cyan} configuring MariaDB...${normal}"
 mysqlpass==$(</dev/urandom tr -dc '12345#%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
 mysqladmin -u root password "${mysqlpass}"
 mysql -u root -p"${mysqlpass}" -e "UPDATE mysql.user SET Password=PASSWORD('${mysqlpass}') WHERE User='root'"
@@ -214,10 +215,10 @@ cat > ~/.my.cnf <<EOF
 [client]
 password = '${mysqlpass}'
 EOF
-printf "${cyan}done ✔${normal}\n"
+printf "${green}done ✔${normal}\n"
 
 # create MySQL database for Wordpress
-printf "${green}▣ creating Wordpress database...${normal}"
+printf "▣ ${cyan} creating Wordpress database...${normal}"
 wpdbpass=$(</dev/urandom tr -dc '12345#%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
 cat > /tmp/create.sql <<EOF
 create database ${username}_wp;
@@ -226,32 +227,32 @@ flush privileges;
 EOF
 mysql < /tmp/create.sql 
 rm -rf /tmp/create.sql
-printf "${cyan}done ✔${normal}\n"
+printf "${green}done ✔${normal}\n"
 
 # installing WPCLI
-printf "${green}▣ installing wpcli...${normal}"
+printf "▣ ${cyan} installing wpcli...${normal}"
 wget https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -O /tmp/wp >> $log 2>&1
 chmod 755 /tmp/wp >> $log 2>&1
 mv /tmp/wp /usr/local/bin/wp >> $log 2>&1
-printf "${cyan}done ✔${normal}\n"
+printf "${green}done ✔${normal}\n"
 
 # install Wordpress
-printf "${green}▣ installing Wordpress...${normal}"
+printf "▣ ${cyan} installing Wordpress...${normal}"
 cd /chroot/${username}/home/${username}/public_html
 wpadminpass=$(</dev/urandom tr -dc '12345#%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
 sudo -u ${username} bash -c "/usr/local/bin/wp core download" >> $log 2>&1
 sudo -u ${username} bash -c "/usr/local/bin/wp core config --dbname=${username}_wp --dbuser=${username}_wp --dbpass=${wpdbpass} --dbhost=localhost --dbprefix=wp_" >> $log 2>&1
 sudo -u ${username} bash -c "/usr/local/bin/wp core install --url=${domainname} --title='Just another Wordpress site' --admin_user=${username} --admin_password=${wpadminpass} --admin_email=${email}" >> $log 2>&1
 sudo -u ${username} bash -c "/usr/local/bin/wp plugin install really-simple-ssl wp-super-cache" >> $log 2>&1
-printf "${cyan}done ✔${normal}\n"
+printf "${green}done ✔${normal}\n"
 
 # install Let's Encrypt certbot
-printf "${green}▣ installing Let's Encrypt certbot...${normal}"
+printf "▣ ${cyan} installing Let's Encrypt certbot...${normal}"
 yum -y install certbot >> $log 2>&1
-printf "${cyan}done ✔${normal}\n"
+printf "${green}done ✔${normal}\n"
 
 # configuring Let's Encrypt
-printf "${green}▣ configuring Let's Encrypt...${normal}"
+printf "▣ ${cyan} configuring Let's Encrypt...${normal}"
 
 domipaddr=$(dig +short ${domainname})
 svripaddr=$(curl -sSL http://cpanel.com/showip.cgi)
@@ -275,7 +276,7 @@ if [ "${domipaddr}" == "${svripaddr}" ]; then
     crontab /tmp/le.cron
     rm -rf /tmp/le.cron
     cd /chroot/${username}/home/${username}/public_html
-    printf "${cyan}done ✔${normal}\n"
+    printf "${green}done ✔${normal}\n"
 else
     printf "${red}skipped, IP address probably not pointed to this server ⛔.${normal}\n"
 fi
@@ -285,11 +286,11 @@ echo
 echo "==========================================================================="
 echo "SFTP"
 echo "Domain name : ${red}${domainname}${normal}"
-echo "Username    : ${green}${username}${normal}"
+echo "Username    : ${cyan}${username}${normal}"
 echo "Password    : ${green}${password}${normal}"
 echo
 echo "Wordpress"
-echo "Username    : ${green}${username}${normal}"
+echo "Username    : ${cyan}${username}${normal}"
 echo "Password    : ${green}${wpadminpass}${normal}"
 echo
 echo "Don't forget to enable Really Simple SSL plugin if Let's Encrypt available"
@@ -302,4 +303,4 @@ rm -rf /tmp/ngxinstall /tmp/jailkit*
 
 timeend=$(date +%s)
 duration=$(echo $((timeend-timestart)) | awk '{print int($1/60)"m "int($1%60)"s"}')
-printf "${green}▣▣▣ Done, took ${yellow}${duration}${green} ▣▣▣${normal}\n\n"
+printf "${green}▣▣▣ ${normal}time spent: ${yellow}${duration}${green} ▣▣▣${normal}\n\n"
