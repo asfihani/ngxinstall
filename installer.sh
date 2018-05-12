@@ -146,13 +146,17 @@ systemctl enable nginx >> $log 2>&1
 systemctl start nginx >> $log 2>&1
 printf "${CYAN}done ✔${NORMAL}\n"
 
-# configure php-fpm
-printf "${GREEN}▣ configuring php-fpm...${NORMAL}"
+# installing php 7.2
+printf "${GREEN}▣ installing PHP 7.2...${NORMAL}"
 yum-config-manager --enable remi-php72 >> $log 2>&1
 yum -y install php php-mysqlnd php-curl php-simplexml \
 php-devel php-gd php-json php-pecl-mcrypt php-mbstring php-opcache php-pear \
 php-pecl-apcu php-pecl-geoip php-pecl-json-post php-pecl-memcache php-pecl-xmldiff \
 php-pecl-zip php-pspell php-soap php-tidy php-xml php-xmlrpc php-fpm >> $log 2>&1
+printf "${CYAN}done ✔${NORMAL}\n"
+
+# configure php-fpm
+printf "${GREEN}▣ configuring php-fpm...${NORMAL}"
 sed -i 's/^max_execution_time =.*/max_execution_time = 300/g' /etc/php.ini
 sed -i 's/^memory_limit =.*/memory_limit = 256M/g' /etc/php.ini
 sed -i 's/^upload_max_filesize =.*/upload_max_filesize = 64M/g' /etc/php.ini
