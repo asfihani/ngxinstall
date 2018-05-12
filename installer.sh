@@ -63,23 +63,22 @@ done
 sed -i 's/^SELINUX=enforcing/SELINUX=disabled/g' /etc/sysconfig/selinux
 
 # install necessary packages
-printf "${GREEN}▣▣ installing packages...${NORMAL}" 
+printf "${GREEN}▣ installing packages...${NORMAL}" 
 yum -y install epel-release > $log 2>&1
 yum -y install git wget vim-enhanced curl yum-utils gcc make unzip lsof telnet bind-utils postfix certbot shadow-utils sudo >> $log 2>&1
 yum -y install http://rpms.remirepo.net/enterprise/remi-release-7.rpm >> $log 2>&1
 printf "${CYAN}done ✔.${NORMAL}\n"
 
 # download config files from git repository
-printf "${GREEN}▣▣ cloning config files from git repository...${NORMAL}"
-mkdir -p /root/tmp >> $log
-cd /root/tmp 
+printf "${GREEN}▣ cloning config files from git repository...${NORMAL}"
+cd /tmp 
 rm -rf ngxinstall
 git clone https://github.com/asfihani/ngxinstall.git >> $log 2>&1
 printf "${CYAN}done ✔.${NORMAL}\n"
 
 # setup jailkit and account
-printf "${GREEN}▣▣ installing jailkit...${NORMAL}"
-cd /root/tmp
+printf "${GREEN}▣ installing jailkit...${NORMAL}"
+cd /tmp
 rm -rf jailkit-2.19.tar.gz jailkit-2.19
 
 wget http://olivier.sessink.nl/jailkit/jailkit-2.19.tar.gz  >> $log 2>&1
@@ -97,7 +96,7 @@ EOF
 printf "${CYAN}done ✔.${NORMAL}\n"
 
 # setup chroot for account
-printf "${GREEN}▣▣ configure account...${NORMAL}"
+printf "${GREEN}▣ configure account...${NORMAL}"
 mkdir /chroot >> $log 2>&1
 PASSWORD=$(</dev/urandom tr -dc '12345!@#$%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
 adduser ${USERNAME}
@@ -114,24 +113,24 @@ chmod 755  /chroot/${USERNAME}/home/${USERNAME} /chroot/${USERNAME}/home/${USERN
 printf "${CYAN}done ✔.${NORMAL}\n"
 
 # configure nginx
-printf "${GREEN}▣▣ configure nginx...${NORMAL}"
-cp -p /root/tmp/ngxinstall/config/nginx.repo /etc/yum.repos.d/nginx.repo
+printf "${GREEN}▣ configure nginx...${NORMAL}"
+cp -p /tmp/ngxinstall/config/nginx.repo /etc/yum.repos.d/nginx.repo
 yum -y install nginx >> $log 2>&1
 mv /etc/nginx/nginx.conf{,.orig}
-cp -p /root/tmp/ngxinstall/config/nginx.conf /etc/nginx/nginx.conf
+cp -p /tmp/ngxinstall/config/nginx.conf /etc/nginx/nginx.conf
 mkdir -p /etc/nginx/sites-enabled/ /etc/nginx/conf.d/ >> $log 2>&1
-cp -p /root/tmp/ngxinstall/config/vhost.tpl /etc/nginx/sites-enabled/${DOMAINNAME}.conf
+cp -p /tmp/ngxinstall/config/vhost.tpl /etc/nginx/sites-enabled/${DOMAINNAME}.conf
 sed -i "s/%%domainname%%/${DOMAINNAME}/g" /etc/nginx/sites-enabled/${DOMAINNAME}.conf
 sed -i "s/%%username%%/${USERNAME}/g" /etc/nginx/sites-enabled/${DOMAINNAME}.conf
-cp -p /root/tmp/ngxinstall/config/wordpress.tpl /etc/nginx/conf.d/wordpress.conf
-cp -p /root/tmp/ngxinstall/config/wp_super_cache.tpl /etc/nginx/conf.d/wp_super_cache.conf 
+cp -p /tmp/ngxinstall/config/wordpress.tpl /etc/nginx/conf.d/wordpress.conf
+cp -p /tmp/ngxinstall/config/wp_super_cache.tpl /etc/nginx/conf.d/wp_super_cache.conf 
 openssl dhparam -dsaparam -out /etc/nginx/dhparam.pem 4096 >> $log 2>&1
 systemctl enable nginx >> $log 2>&1
 systemctl start nginx >> $log 2>&1
 printf "${CYAN}done ✔.${NORMAL}\n"
 
 # configure php-fpm
-printf "${GREEN}▣▣ configure php-fpm...${NORMAL}"
+printf "${GREEN}▣ configure php-fpm...${NORMAL}"
 yum-config-manager --enable remi-php72 >> $log 2>&1
 yum -y -q install php php-mysqlnd php-curl php-simplexml \
 php-devel php-gd php-json php-mcrypt php-mbstring php-opcache php-pear \
@@ -145,7 +144,7 @@ sed -i 's/^;opcache.revalidate_freq=2/opcache.revalidate_freq=60/g' /etc/php.d/1
 sed -i 's/^;opcache.fast_shutdown=0/opcache.fast_shutdown=1/g' /etc/php.d/10-opcache.ini
 mv /etc/php-fpm.d/www.conf{,.orig}
 touch /etc/php-fpm.d/www.conf
-cp -p /root/tmp/ngxinstall/config/php-fpm.tpl /etc/php-fpm.d/${DOMAINNAME}.conf 
+cp -p /tmp/ngxinstall/config/php-fpm.tpl /etc/php-fpm.d/${DOMAINNAME}.conf 
 sed -i "s/%%domainname%%/${DOMAINNAME}/g" /etc/php-fpm.d/${DOMAINNAME}.conf
 sed -i "s/%%username%%/${USERNAME}/g" /etc/php-fpm.d/${DOMAINNAME}.conf
 systemctl enable php-fpm >> $log 2>&1
@@ -153,8 +152,8 @@ systemctl start php-fpm >> $log 2>&1
 printf "${CYAN}done ✔.${NORMAL}\n"
 
 # configure MariaDB
-printf "${GREEN}▣▣ configure MariaDB...${NORMAL}"
-cp -p /root/tmp/ngxinstall/config/mariadb.repo /etc/yum.repos.d/mariadb.repo
+printf "${GREEN}▣ configure MariaDB...${NORMAL}"
+cp -p /tmp/ngxinstall/config/mariadb.repo /etc/yum.repos.d/mariadb.repo
 yum -y -q install MariaDB-server MariaDB-client MariaDB-compat MariaDB-shared >> $log 2>&1
 systemctl enable mariadb >> $log 2>&1
 systemctl start mariadb >> $log 2>&1
@@ -173,7 +172,7 @@ EOF
 printf "${CYAN}done ✔.${NORMAL}\n"
 
 # create MySQL database for Wordpress
-printf "${GREEN}▣▣ configure Wordpress database...${NORMAL}"
+printf "${GREEN}▣ configure Wordpress database...${NORMAL}"
 WP_PASS=$(</dev/urandom tr -dc '12345!@#$%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
 cat > /tmp/create.sql <<EOF
 create database ${USERNAME}_wp;
@@ -185,14 +184,14 @@ rm -rf /tmp/create.sql
 printf "${CYAN}done ✔.${NORMAL}\n"
 
 # installing WPCLI
-printf "${GREEN}▣▣ installing WPCLI...${NORMAL}"
+printf "${GREEN}▣ installing WPCLI...${NORMAL}"
 wget https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -O /tmp/wp >> $log 2>&1
 chmod 755 /tmp/wp >> $log 2>&1
 mv /tmp/wp /usr/local/bin/wp >> $log 2>&1
 printf "${CYAN}done ✔.${NORMAL}\n"
 
 # install Wordpress
-printf "${GREEN}▣▣ installing Wordpress...${NORMAL}"
+printf "${GREEN}▣ installing Wordpress...${NORMAL}"
 cd /chroot/${USERNAME}/home/${USERNAME}/public_html
 ADMIN_PASS=$(</dev/urandom tr -dc '12345!@#$%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
 sudo -u ${USERNAME} bash -c "/usr/local/bin/wp core download" >> $log 2>&1
@@ -202,14 +201,14 @@ sudo -u ${USERNAME} bash -c "/usr/local/bin/wp plugin install really-simple-ssl 
 printf "${CYAN}done ✔.${NORMAL}\n"
 
 # Configuring Let's Encrypt
-printf "${GREEN}▣▣ configuring Let's Encrypt...${NORMAL}"
+printf "${GREEN}▣ configuring Let's Encrypt...${NORMAL}"
 
 WEB_IP=$(dig +short ${DOMAINNAME})
 CURR_IP=$(curl -sSL http://cpanel.com/showip.cgi)
 
 if [ "${WEB_IP}" == "${CURR_IP}" ]; then
     mkdir -p /etc/letsencrypt
-    cp -p /root/tmp/ngxinstall/config/cli.ini /etc/letsencrypt/cli.ini 
+    cp -p /tmp/ngxinstall/config/cli.ini /etc/letsencrypt/cli.ini 
     sed -i "s{%%email%%{${EMAIL}{g" /etc/letsencrypt/cli.ini
     certbot certonly --webroot -w /chroot/${USERNAME}/home/${USERNAME}/public_html -d ${DOMAINNAME} -d www.${DOMAINNAME}
     sed -i "s{^#{{g" /etc/nginx/sites-enabled/${DOMAINNAME}.conf
@@ -224,7 +223,7 @@ else
 fi
 
 # Configuring Postfix
-printf "${GREEN}▣▣ configuring Postfix...${NORMAL}"
+printf "${GREEN}▣ configuring Postfix...${NORMAL}"
 rpm -e --nodeps sendmail* >> $log 2>&1
 yum -y install postfix >> $log 2>&1
 systemctl enable postfix >> $log 2>&1
@@ -245,3 +244,6 @@ printf "Don't forget to enable Really Simple SSL plugin if Let's Encrypt availab
 printf "and configure WP Super Cache as well. Enjoy!\n"
 printf "===========================================================================\n"
 echo
+
+# clean all temporary files
+rm -rf /tmp/ngxinstall /tmp/jailkit*
