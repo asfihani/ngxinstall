@@ -302,4 +302,4 @@ rm -rf /tmp/ngxinstall /tmp/jailkit*
 
 timeend=$(date +%s)
 duration=$(echo $((timeend-timestart)) | awk '{print int($1/60)"m "int($1%60)"s"}')
-printf "${green}▣▣▣  Done, took ${yellow}${duration}${green} ▣▣▣${normal}\n\n"
+printf "${green}▣▣▣ Done, took ${yellow}${duration}${green} ▣▣▣${normal}\n\n"
