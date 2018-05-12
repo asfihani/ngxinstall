@@ -70,7 +70,7 @@ yum -y install http://rpms.remirepo.net/enterprise/remi-release-7.rpm >> $log 2>
 printf "${CYAN}done ✔${NORMAL}\n"
 
 # download config files from git repository
-printf "${GREEN}▣ cloning config files from git repository...${NORMAL}"
+printf "${GREEN}▣ cloning config from git...${NORMAL}"
 cd /tmp 
 rm -rf ngxinstall
 git clone https://github.com/asfihani/ngxinstall.git >> $log 2>&1
@@ -98,7 +98,7 @@ printf "${CYAN}done ✔${NORMAL}\n"
 # setup chroot for account
 printf "${GREEN}▣ configuring account...${NORMAL}"
 mkdir /chroot >> $log 2>&1
-PASSWORD=$(</dev/urandom tr -dc '12345!@#$%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
+PASSWORD=$(</dev/urandom tr -dc '12345@#%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
 adduser ${USERNAME}
 echo "${USERNAME}:${PASSWORD}" | chpasswd
 mkdir -p /chroot/${USERNAME}
@@ -157,7 +157,7 @@ cp -p /tmp/ngxinstall/config/mariadb.repo /etc/yum.repos.d/mariadb.repo
 yum -y -q install MariaDB-server MariaDB-client MariaDB-compat MariaDB-shared >> $log 2>&1
 systemctl enable mariadb >> $log 2>&1
 systemctl start mariadb >> $log 2>&1
-MYSQL_PASS==$(</dev/urandom tr -dc '12345!@#$%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
+MYSQL_PASS==$(</dev/urandom tr -dc '12345@#%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
 mysqladmin -u root password "${MYSQL_PASS}"
 mysql -u root -p"${MYSQL_PASS}" -e "UPDATE mysql.user SET Password=PASSWORD('${MYSQL_PASS}') WHERE User='root'"
 mysql -u root -p"${MYSQL_PASS}" -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1')"
@@ -173,7 +173,7 @@ printf "${CYAN}done ✔${NORMAL}\n"
 
 # create MySQL database for Wordpress
 printf "${GREEN}▣ configuring Wordpress database...${NORMAL}"
-WP_PASS=$(</dev/urandom tr -dc '12345!@#$%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
+WP_PASS=$(</dev/urandom tr -dc '12345@#%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
 cat > /tmp/create.sql <<EOF
 create database ${USERNAME}_wp;
 grant all privileges on ${USERNAME}_wp.* to ${USERNAME}_wp@localhost identified by '${WP_PASS}';
@@ -193,7 +193,7 @@ printf "${CYAN}done ✔${NORMAL}\n"
 # install Wordpress
 printf "${GREEN}▣ installing Wordpress...${NORMAL}"
 cd /chroot/${USERNAME}/home/${USERNAME}/public_html
-ADMIN_PASS=$(</dev/urandom tr -dc '12345!@#$%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
+ADMIN_PASS=$(</dev/urandom tr -dc '12345@#%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
 sudo -u ${USERNAME} bash -c "/usr/local/bin/wp core download" >> $log 2>&1
 sudo -u ${USERNAME} bash -c "/usr/local/bin/wp core config --dbname=${USERNAME}_wp --dbuser=${USERNAME}_wp --dbpass=${WP_PASS} --dbhost=localhost --dbprefix=wp_" >> $log 2>&1
 sudo -u ${USERNAME} bash -c "/usr/local/bin/wp core install --url=${DOMAINNAME} --title='Just another Wordpress site' --admin_user=${USERNAME} --admin_password=${ADMIN_PASS} --admin_email=${EMAIL}" >> $log 2>&1
@@ -247,7 +247,7 @@ printf "Username    : ${USERNAME}\n"
 printf "Password    : ${PASSWORD}\n\n"
 printf "Wordpress\n"
 printf "Username    : ${USERNAME}\n"
-printf "Password    : ${WP_PASS}\n\n"
+printf "Password    : ${ADMIN_PASS}\n\n"
 printf "Don't forget to enable Really Simple SSL plugin if Let's Encrypt available\n"
 printf "and configure WP Super Cache as well. Enjoy!\n"
 printf "===========================================================================\n"
