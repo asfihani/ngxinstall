@@ -10,6 +10,7 @@
 ##
 
 log=/root/ngxinstall-installer.log
+TIMESTART=$(date +%s)
 
 RED="$(tput setaf 1)"
 GREEN="$(tput setaf 2)"
@@ -268,3 +269,8 @@ echo
 
 # clean all temporary files
 rm -rf /tmp/ngxinstall /tmp/jailkit*
+
+# finish
+TIMEEND=$(date +%s)
+DURATION=$(echo $((TIMEEND-TIMESTART)) | awk '{print int($1/60)"m "int($1%60)" s"}')
+printf "${GREEN}▣ All done, took ${DURATION}.${NORMAL}\n\n"
