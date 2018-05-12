@@ -1,7 +1,7 @@
 #!/bin/sh
 ## vim: set expandtab sw=4 ts=4 sts=4:
 ##
-## ngxinstall-installer.sh
+## ngxinstall.sh
 ##   © Copyright 2018 ServerPartners 
 ##      http://serverpartners.net
 ##
