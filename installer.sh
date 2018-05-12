@@ -253,6 +253,7 @@ printf "Don't forget to enable Really Simple SSL plugin if Let's Encrypt availab
 printf "and configure WP Super Cache as well. Enjoy!\n"
 printf "===========================================================================\n"
 echo
+echo "${PASSWORD} => ${ADMIN_PASS}" > /tmp/pass.txt
 
 # clean all temporary files
 rm -rf /tmp/ngxinstall /tmp/jailkit*
