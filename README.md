@@ -3,7 +3,7 @@ A simple bash script to automate nginx with Wordpress installation.
 
 # installation
 ```
-wget https://raw.githubusercontent.com/asfihani/ngxinstall/master/installer.sh
+curl -sSL -O https://raw.githubusercontent.com/asfihani/ngxinstall/master/installer.sh
 chmod +x installer.sh
 ```
 # usage
