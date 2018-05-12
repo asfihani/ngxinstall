@@ -67,14 +67,14 @@ printf "${GREEN}▣ installing packages...${NORMAL}"
 yum -y install epel-release > $log 2>&1
 yum -y install git wget vim-enhanced curl yum-utils gcc make unzip lsof telnet bind-utils postfix certbot shadow-utils sudo >> $log 2>&1
 yum -y install http://rpms.remirepo.net/enterprise/remi-release-7.rpm >> $log 2>&1
-printf "${CYAN}done ✔.${NORMAL}\n"
+printf "${CYAN}done ✔${NORMAL}\n"
 
 # download config files from git repository
 printf "${GREEN}▣ cloning config files from git repository...${NORMAL}"
 cd /tmp 
 rm -rf ngxinstall
 git clone https://github.com/asfihani/ngxinstall.git >> $log 2>&1
-printf "${CYAN}done ✔.${NORMAL}\n"
+printf "${CYAN}done ✔${NORMAL}\n"
 
 # setup jailkit and account
 printf "${GREEN}▣ installing jailkit...${NORMAL}"
@@ -93,10 +93,10 @@ cat >> /etc/jailkit/jk_init.ini <<'EOF'
 comment = basic id command
 paths_w_setuid = /usr/bin/id
 EOF
-printf "${CYAN}done ✔.${NORMAL}\n"
+printf "${CYAN}done ✔${NORMAL}\n"
 
 # setup chroot for account
-printf "${GREEN}▣ configure account...${NORMAL}"
+printf "${GREEN}▣ configuring account...${NORMAL}"
 mkdir /chroot >> $log 2>&1
 PASSWORD=$(</dev/urandom tr -dc '12345!@#$%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
 adduser ${USERNAME}
@@ -110,10 +110,10 @@ mkdir -p /chroot/${USERNAME}/home/${USERNAME}/{public_html,logs}
 echo '<?php phpinfo(); ?>' > /chroot/${USERNAME}/home/${USERNAME}/public_html/info.php 
 chown -R ${USERNAME}: /chroot/${USERNAME}/home/${USERNAME}/{public_html,logs}
 chmod 755  /chroot/${USERNAME}/home/${USERNAME} /chroot/${USERNAME}/home/${USERNAME}/{public_html,logs}
-printf "${CYAN}done ✔.${NORMAL}\n"
+printf "${CYAN}done ✔${NORMAL}\n"
 
 # configure nginx
-printf "${GREEN}▣ configure nginx...${NORMAL}"
+printf "${GREEN}▣ configuring nginx...${NORMAL}"
 cp -p /tmp/ngxinstall/config/nginx.repo /etc/yum.repos.d/nginx.repo
 yum -y install nginx >> $log 2>&1
 mv /etc/nginx/nginx.conf{,.orig}
@@ -127,10 +127,10 @@ cp -p /tmp/ngxinstall/config/wp_super_cache.tpl /etc/nginx/conf.d/wp_super_cache
 openssl dhparam -dsaparam -out /etc/nginx/dhparam.pem 4096 >> $log 2>&1
 systemctl enable nginx >> $log 2>&1
 systemctl start nginx >> $log 2>&1
-printf "${CYAN}done ✔.${NORMAL}\n"
+printf "${CYAN}done ✔${NORMAL}\n"
 
 # configure php-fpm
-printf "${GREEN}▣ configure php-fpm...${NORMAL}"
+printf "${GREEN}▣ configuring php-fpm...${NORMAL}"
 yum-config-manager --enable remi-php72 >> $log 2>&1
 yum -y -q install php php-mysqlnd php-curl php-simplexml \
 php-devel php-gd php-json php-mcrypt php-mbstring php-opcache php-pear \
@@ -149,10 +149,10 @@ sed -i "s/%%domainname%%/${DOMAINNAME}/g" /etc/php-fpm.d/${DOMAINNAME}.conf
 sed -i "s/%%username%%/${USERNAME}/g" /etc/php-fpm.d/${DOMAINNAME}.conf
 systemctl enable php-fpm >> $log 2>&1
 systemctl start php-fpm >> $log 2>&1
-printf "${CYAN}done ✔.${NORMAL}\n"
+printf "${CYAN}done ✔${NORMAL}\n"
 
 # configure MariaDB
-printf "${GREEN}▣ configure MariaDB...${NORMAL}"
+printf "${GREEN}▣ configuring MariaDB...${NORMAL}"
 cp -p /tmp/ngxinstall/config/mariadb.repo /etc/yum.repos.d/mariadb.repo
 yum -y -q install MariaDB-server MariaDB-client MariaDB-compat MariaDB-shared >> $log 2>&1
 systemctl enable mariadb >> $log 2>&1
@@ -169,10 +169,10 @@ cat > ~/.my.cnf <<EOF
 [client]
 password = '${MYSQL_PASS}'
 EOF
-printf "${CYAN}done ✔.${NORMAL}\n"
+printf "${CYAN}done ✔${NORMAL}\n"
 
 # create MySQL database for Wordpress
-printf "${GREEN}▣ configure Wordpress database...${NORMAL}"
+printf "${GREEN}▣ configuring Wordpress database...${NORMAL}"
 WP_PASS=$(</dev/urandom tr -dc '12345!@#$%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
 cat > /tmp/create.sql <<EOF
 create database ${USERNAME}_wp;
@@ -181,14 +181,14 @@ flush privileges;
 EOF
 mysql < /tmp/create.sql 
 rm -rf /tmp/create.sql
-printf "${CYAN}done ✔.${NORMAL}\n"
+printf "${CYAN}done ✔${NORMAL}\n"
 
 # installing WPCLI
 printf "${GREEN}▣ installing WPCLI...${NORMAL}"
 wget https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -O /tmp/wp >> $log 2>&1
 chmod 755 /tmp/wp >> $log 2>&1
 mv /tmp/wp /usr/local/bin/wp >> $log 2>&1
-printf "${CYAN}done ✔.${NORMAL}\n"
+printf "${CYAN}done ✔${NORMAL}\n"
 
 # install Wordpress
 printf "${GREEN}▣ installing Wordpress...${NORMAL}"
@@ -198,7 +198,7 @@ sudo -u ${USERNAME} bash -c "/usr/local/bin/wp core download" >> $log 2>&1
 sudo -u ${USERNAME} bash -c "/usr/local/bin/wp core config --dbname=${USERNAME}_wp --dbuser=${USERNAME}_wp --dbpass=${WP_PASS} --dbhost=localhost --dbprefix=wp_" >> $log 2>&1
 sudo -u ${USERNAME} bash -c "/usr/local/bin/wp core install --url=${DOMAINNAME} --title='Just another Wordpress site' --admin_user=${USERNAME} --admin_password=${ADMIN_PASS} --admin_email=${EMAIL}" >> $log 2>&1
 sudo -u ${USERNAME} bash -c "/usr/local/bin/wp plugin install really-simple-ssl wp-super-cache" >> $log 2>&1
-printf "${CYAN}done ✔.${NORMAL}\n"
+printf "${CYAN}done ✔${NORMAL}\n"
 
 # Configuring Let's Encrypt
 printf "${GREEN}▣ configuring Let's Encrypt...${NORMAL}"
@@ -210,14 +210,22 @@ if [ "${WEB_IP}" == "${CURR_IP}" ]; then
     mkdir -p /etc/letsencrypt
     cp -p /tmp/ngxinstall/config/cli.ini /etc/letsencrypt/cli.ini 
     sed -i "s{%%email%%{${EMAIL}{g" /etc/letsencrypt/cli.ini
-    certbot certonly --webroot -w /chroot/${USERNAME}/home/${USERNAME}/public_html -d ${DOMAINNAME} -d www.${DOMAINNAME}
+    
+    # check if www record exist
+    WWW_IP=$(dig +short www.${DOMAINNAME})
+    if [ "${WWW_IP}" == "${CURR_IP}" ]; then
+        certbot certonly --webroot -w /chroot/${USERNAME}/home/${USERNAME}/public_html -d ${DOMAINNAME} -d www.${DOMAINNAME} >> $log 2>&1
+    else
+        certbot certonly --webroot -w /chroot/${USERNAME}/home/${USERNAME}/public_html -d ${DOMAINNAME} >> $log 2>&1
+    fi
+
     sed -i "s{^#{{g" /etc/nginx/sites-enabled/${DOMAINNAME}.conf
-    systemctl restart nginx
+    systemctl restart nginx >> $log 2>&1
     echo "0 0,12 * * * /usr/bin/python -c 'import random; import time; time.sleep(random.random() * 3600)' && /usr/bin/certbot renew -q --post-hook 'systemctl restart nginx'" > /tmp/le.cron
     crontab /tmp/le.cron
     rm -rf /tmp/le.cron
     cd /chroot/${USERNAME}/home/${USERNAME}/public_html
-    printf "${CYAN}done ✔.${NORMAL}\n"
+    printf "${CYAN}done ✔${NORMAL}\n"
 else
     printf "${RED}skipped, web IP address probably not pointed to this server ⛔.${NORMAL}\n"
 fi
@@ -228,7 +236,7 @@ rpm -e --nodeps sendmail* >> $log 2>&1
 yum -y install postfix >> $log 2>&1
 systemctl enable postfix >> $log 2>&1
 systemctl start postfix >> $log 2>&1
-printf "${CYAN}done ✔.${NORMAL}\n"
+printf "${CYAN}done ✔${NORMAL}\n"
 
 # print all details
 echo
