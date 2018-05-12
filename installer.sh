@@ -133,7 +133,7 @@ printf "${CYAN}done ✔${NORMAL}\n"
 printf "${GREEN}▣ configuring php-fpm...${NORMAL}"
 yum-config-manager --enable remi-php72 >> $log 2>&1
 yum -y -q install php php-mysqlnd php-curl php-simplexml \
-php-devel php-gd php-json php-mcrypt php-mbstring php-opcache php-pear \
+php-devel php-gd php-json php-pecl-mcrypt php-mbstring php-opcache php-pear \
 php-pecl-apcu php-pecl-geoip php-pecl-json-post php-pecl-memcache php-pecl-xmldiff \
 php-pecl-zip php-pspell php-soap php-tidy php-xml php-xmlrpc php-fpm >> $log 2>&1
 sed -i 's/^max_execution_time =.*/max_execution_time = 300/g' /etc/php.ini
@@ -227,7 +227,7 @@ if [ "${WEB_IP}" == "${CURR_IP}" ]; then
     cd /chroot/${USERNAME}/home/${USERNAME}/public_html
     printf "${CYAN}done ✔${NORMAL}\n"
 else
-    printf "${RED}skipped, web IP address probably not pointed to this server ⛔.${NORMAL}\n"
+    printf "${RED}skipped, IP address probably not pointed to this server ⛔.${NORMAL}\n"
 fi
 
 # Configuring Postfix
