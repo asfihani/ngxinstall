@@ -63,12 +63,15 @@ done
 sed -i 's/^SELINUX=enforcing/SELINUX=disabled/g' /etc/sysconfig/selinux
 
 # add port 80 and 443 if firewalld enabled
-STATUS=$(firewall-cmd --state)
-if [ "$STATUS" == "running" ]; then
-    firewall-cmd --zone=public --add-service=http > /dev/null 2>&1
-    firewall-cmd --zone=public --add-service=https > /dev/null 2>&1
-    firewall-cmd --zone=public --permanent --add-service=http > /dev/null 2>&1
-    firewall-cmd --zone=public --permanent --add-service=https > /dev/null 2>&1
+if [ -x /usr/bin/firewall-cmd ]; then
+
+    STATUS=$(firewall-cmd --state)
+    if [ "$STATUS" == "running" ]; then
+        firewall-cmd --zone=public --add-service=http > /dev/null 2>&1
+        firewall-cmd --zone=public --add-service=https > /dev/null 2>&1
+        firewall-cmd --zone=public --permanent --add-service=http > /dev/null 2>&1
+        firewall-cmd --zone=public --permanent --add-service=https > /dev/null 2>&1
+    fi
 fi
 
 # install necessary packages and additional repositories
