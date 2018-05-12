@@ -86,6 +86,7 @@ cd /tmp
 rm -rf jailkit-2.19.tar.gz jailkit-2.19
 
 wget http://olivier.sessink.nl/jailkit/jailkit-2.19.tar.gz  >> $log 2>&1
+
 tar -xzf jailkit-2.19.tar.gz  >> $log 2>&1
 cd jailkit-2.19 >> $log
 ./configure  >> $log 2>&1
