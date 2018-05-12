@@ -63,6 +63,15 @@ done
 /sbin/setenforce 0
 sed -i 's/^SELINUX=enforcing/SELINUX=disabled/g' /etc/sysconfig/selinux
 
+# add port 80 and 443 if firewalld enabled
+STATUS=$(firewall-cmd --state)
+if [ "$STATUS" == "running" ]; then
+    firewall-cmd --zone=public --add-service=http > /dev/null 2>&1
+    firewall-cmd --zone=public --add-service=https > /dev/null 2>&1
+    firewall-cmd --zone=public --permanent --add-service=http > /dev/null 2>&1
+    firewall-cmd --zone=public --permanent --add-service=https > /dev/null 2>&1
+fi
+
 # install necessary packages and additional repositories
 printf "${GREEN}▣ installing EPEL repo...${NORMAL}" 
 yum -y install epel-release > $log 2>&1
@@ -270,7 +279,6 @@ echo
 # clean all temporary files
 rm -rf /tmp/ngxinstall /tmp/jailkit*
 
-# finish
 TIMEEND=$(date +%s)
-DURATION=$(echo $((TIMEEND-TIMESTART)) | awk '{print int($1/60)"m "int($1%60)" s"}')
-printf "${GREEN}▣ All done, took ${DURATION}.${NORMAL}\n\n"
+DURATION=$(echo $((TIMEEND-TIMESTART)) | awk '{print int($1/60)"m "int($1%60)"s"}')
+printf "${GREEN}▣▣▣ All done (took ${DURATION}). ▣▣▣${NORMAL}\n\n"
