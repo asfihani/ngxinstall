@@ -82,6 +82,20 @@ while [ "$1" != "" ]; do
     esac
 done
 
+# check if the username exist
+if [ ! -x /usr/bin/getent ]; then
+    yum -y -q install glibc-common
+fi
+
+getent passwd ${username} > /dev/null 2&>1
+retval=$?
+
+if [ "${retval}" -eq 0 ]; then
+    echo
+    printf "${red}⛔ ${cyan}username ${username} already exist, please choose other name.${normal}\n\n"
+    exit 1
+fi
+
 # just another counter
 timestart=$(date +%s)
 
@@ -138,19 +152,21 @@ fi
 # setup jailkit and account
 printf "▣ ${cyan}installing jailkit...${normal}"
 cd /tmp
-rm -rf jailkit-2.19.tar.gz jailkit-2.19
+rm -rf jailkit*
 wget http://olivier.sessink.nl/jailkit/jailkit-2.19.tar.gz  >> $log 2>&1
-tar -xzvf jailkit-2.19.tar.gz  >> $log 2>&1
-cd jailkit-2.19 >> $log
-./configure  >> $log 2>&1
-make >> $log 2>&1
-make install >> $log 2>&1
-cat >> /etc/jailkit/jk_init.ini <<'EOF'
-[basicid]
-comment = basic id command
-paths_w_setuid = /usr/bin/id
-EOF
-printf "${green}done ✔${normal}\n"
+
+if [ -f "jailkit-2.19.tar.gz" ]; then
+    tar -xzvf jailkit-2.19.tar.gz  >> $log 2>&1
+    cd jailkit-2.19 >> $log
+    ./configure  >> $log 2>&1
+    make >> $log 2>&1
+    make install >> $log 2>&1
+    cp -p /tmp/ngxinstall/config/jk_init.ini /etc/jailkit/jk_init.ini
+    printf "${green}done ✔${normal}\n"
+else
+    printf "${red}⛔ ${cyan}unable to downlog jailkit from https://olivier.sessink.nl/jailkit/.${normal}\n\n"
+    exit 1
+fi
 
 # setup chroot for account
 printf "▣ ${cyan}configuring account...${normal}"
@@ -159,13 +175,19 @@ password=$(</dev/urandom tr -dc '12345#%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -
 adduser ${username}
 echo "${username}:${password}" | chpasswd
 mkdir -p /chroot/${username}
-jk_init -j /chroot/${username} basicshell editors extendedshell netutils ssh sftp scp basicid >> $log 2>&1
-jk_jailuser -s /bin/bash -m -j /chroot/${username} ${username} >> $log 2>&1
-mkdir -p /chroot/${username}/home/${username}/{public_html,logs}
-echo '<?php phpinfo(); ?>' > /chroot/${username}/home/${username}/public_html/info.php 
-chown -R ${username}: /chroot/${username}/home/${username}/{public_html,logs}
-chmod 755  /chroot/${username}/home/${username} /chroot/${username}/home/${username}/{public_html,logs}
-printf "${green}done ✔${normal}\n"
+
+if [ -d "/chroot/${username}" ]; then
+    jk_init -j /chroot/${username} basicshell editors extendedshell netutils ssh sftp scp basicid >> $log 2>&1
+    jk_jailuser -s /bin/bash -m -j /chroot/${username} ${username} >> $log 2>&1
+    mkdir -p /chroot/${username}/home/${username}/{public_html,logs}
+    echo '<?php phpinfo(); ?>' | tee -a /chroot/${username}/home/${username}/public_html/info.php 
+    chown -R ${username}: /chroot/${username}/home/${username}/{public_html,logs}
+    chmod 755  /chroot/${username}/home/${username} /chroot/${username}/home/${username}/{public_html,logs}
+    printf "${green}done ✔${normal}\n"
+else
+    printf "${red}⛔ ${cyan}can't configure jailkit.${normal}\n\n"
+    exit 1
+fi
 
 # configure nginx
 printf "▣ ${cyan}configuring nginx...${normal}"
@@ -194,7 +216,16 @@ fi
 # start nginx
 systemctl enable nginx >> $log 2>&1
 systemctl start nginx >> $log 2>&1
-printf "${green}done ✔${normal}\n"
+
+ngxstatus=$(systemctl is-active nginx)
+
+if [ "${ngxstatus}" == "active" ]; then
+    printf "${green}done ✔${normal}\n"
+else
+    systemctl status nginx >> $log 2>&1
+    printf "${red}⛔ ${cyan}failed to start nginx.${normal}\n\n"
+    exit 1
+fi
 
 # installing php 7.2
 printf "▣ ${cyan}installing PHP 7.2...${normal}"
@@ -226,7 +257,16 @@ sed -i "s/%%username%%/${username}/g" /etc/php-fpm.d/${domainname}.conf
 
 systemctl enable php-fpm >> $log 2>&1
 systemctl start php-fpm >> $log 2>&1
-printf "${green}done ✔${normal}\n"
+
+fpmtatus=$(systemctl is-active php-fpm)
+
+if [ "${fpmtatus}" == "active" ]; then
+    printf "${green}done ✔${normal}\n"
+else
+    systemctl status php-fpm >> $log 2>&1
+    printf "${red}⛔ ${cyan}failed to start php-fpm.${normal}\n\n"
+    exit 1
+fi
 
 # install MariaDB
 printf "▣ ${cyan}installing MariaDB...${normal}"
@@ -236,7 +276,16 @@ yum -y install MariaDB-server MariaDB-client MariaDB-compat MariaDB-shared >> $l
 
 systemctl enable mariadb >> $log 2>&1
 systemctl start mariadb >> $log 2>&1
-printf "${green}done ✔${normal}\n"
+
+mariadbstatus=$(systemctl is-active mariadb)
+
+if [ "${mariadbstatus}" == "active" ]; then
+    printf "${green}done ✔${normal}\n"
+else
+    systemctl status mariadb >> $log 2>&1
+    printf "${red}⛔ ${cyan}failed to start mariadb.${normal}\n\n"
+    exit 1
+fi
 
 # configure MariaDB
 printf "▣ ${cyan}configuring MariaDB...${normal}"
@@ -356,6 +405,7 @@ echo
 echo "Wordpress"
 echo "Username      : ${cyan}${username}${normal}"
 echo "Password      : ${green}${wpadminpass}${normal}"
+echo "URL           : ${yellow}http://${domainname}/wp-admin/${normal}"
 echo
 echo "Don't forget to enable Really Simple SSL plugin if letsencrypt available"
 echo "and configure WP Super Cache as well. Enjoy!"
