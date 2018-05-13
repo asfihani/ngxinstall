@@ -92,7 +92,7 @@ retval=$?
 
 if [ "${retval}" -eq 0 ]; then
     echo
-    printf "${red}⛔ ${cyan}username ${username} already exist, please choose other name.${normal}\n\n"
+    printf "${red}⛔ ${cyan}username ${username} exist.${normal}\n\n"
     exit 1
 fi
 
@@ -400,7 +400,7 @@ echo "SFTP"
 echo "Domain name   : ${red}${domainname}${normal}"
 echo "Username      : ${cyan}${username}${normal}"
 echo "Password      : ${green}${password}${normal}"
-echo "Document root : ${yellow}/chroot/${username}/home/${username}/{public_html${normal}"
+echo "Document root : ${yellow}/chroot/${username}/home/${username}/public_html${normal}"
 echo
 echo "Wordpress"
 echo "Username      : ${cyan}${username}${normal}"
