@@ -223,7 +223,7 @@ if [ -d "/chroot/${username}" ]; then
     jk_init -j /chroot/${username} basicshell editors extendedshell netutils ssh sftp scp basicid >> $log 2>&1
     jk_jailuser -s /bin/bash -m -j /chroot/${username} ${username} >> $log 2>&1
     mkdir -p /chroot/${username}/home/${username}/{public_html,logs}
-    echo '<?php phpinfo(); ?>' | tee -a /chroot/${username}/home/${username}/public_html/info.php 
+    echo '<?php phpinfo(); ?>' > /chroot/${username}/home/${username}/public_html/info.php 
     chown -R ${username}: /chroot/${username}/home/${username}/{public_html,logs}
     chmod 755  /chroot/${username}/home/${username} /chroot/${username}/home/${username}/{public_html,logs}
     prntok
