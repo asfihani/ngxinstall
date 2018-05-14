@@ -419,13 +419,22 @@ if [ "${domipaddr}" == "${svripaddr}" ]; then
     
     # check if www record exist and add it to the pool
     wwwipaddr=$(dig +short www.${domainname})
-    
-    # request certificate
+
     if [ "${wwwipaddr}" == "${svripaddr}" ]; then
-        certbot certonly --webroot -w /chroot/${username}/home/${username}/public_html -d ${domainname} -d www.${domainname} >> $log 2>&1
+        domargs="-d ${domainname} -d www.${domainname}"
     else
-        certbot certonly --webroot -w /chroot/${username}/home/${username}/public_html -d ${domainname} >> $log 2>&1
+        domargs="-d ${domainname}"
     fi
+
+    if [ "${ENV}" == "dev" ]; then
+        extraargs="--staging"
+    else
+        extraargs=""
+    fi
+
+    # request certificate
+    webroot="/chroot/${username}/home/${username}/public_html"
+    certbot certonly --webroot -w ${webroot} ${domargs} ${extraargs}>> $log 2>&1
 
     retval=$?
     # check if certbot successfully issue certificate
@@ -466,7 +475,7 @@ echo "SFTP"
 echo "Domain name   : ${txtbld}${red}${domainname}${normal}"
 echo "Username      : ${txtbld}${cyan}${username}${normal}"
 echo "Password      : ${txtbld}${green}${password}${normal}"
-echo "Document root : ${txtbld}${yellow}/chroot/${username}/home/${username}/public_html${normal}"
+echo "Document root : ${txtbld}${yellow}${webroot}${normal}"
 echo
 echo "Wordpress"
 echo "Username      : ${txtbld}${cyan}${username}${normal}"
