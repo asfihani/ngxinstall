@@ -9,8 +9,11 @@
 # © 2018 ServerPartners - http://serverpartners.net
 #
 # ############################################################################
+
+# define log path
 log=/root/ngxinstall.log
 
+# define color code
 red=$(tput setaf 1)
 green=$(tput setaf 2)
 yellow=$(tput setaf 3)
@@ -18,7 +21,7 @@ cyan=$(tput setaf 6)
 normal=$(tput sgr0)
 txtbld=$(tput bold)
 
-#
+# functions to format text
 prntinfo () {
     message=$1
     printf "${cyan}▣ ${normal}${message}..."
@@ -30,12 +33,12 @@ prntok () {
 
 prntwarn () {
     message=$1
-    printf "\n\n${yellow}${txtbld}[⚠ warn] $message.${normal}\n\n"
+    printf "${yellow}${txtbld}[⚠ warn] $message.${normal}\n\n"
 }
 
 prnterr () {
     message=$1
-    printf "\n\n${red}${txtbld}[⛔ error] $message.${normal}\n\n"
+    printf "\n${red}${txtbld}[⛔ error] $message.${normal}\n\n"
     exit 1
 }
 
@@ -136,25 +139,25 @@ prntinfo "installing EPEL repo"
 yum -y install epel-release > $log 2>&1
 retval=$?
 if [ "${retval}" -ne 0 ]; then
-    pnrterr "can't install EPEL repo"
+    prnterr "can't install EPEL repo"
 fi
-pnrtok
+prntok
 
 prntinfo "installing Remi repo" 
 yum -y install http://rpms.remirepo.net/enterprise/remi-release-7.rpm >> $log 2>&1
 retval=$?
 if [ "${retval}" -ne 0 ]; then
-    pnrterr "can't install remi repo"
+    prnterr "can't install remi repo"
 fi
-pnrtok
+prntok
 
 prntinfo "installing packages" 
 yum -y install git wget vim-enhanced curl yum-utils gcc make unzip lsof telnet bind-utils shadow-utils sudo >> $log 2>&1
 retval=$?
 if [ "${retval}" -ne 0 ]; then
-    pnrterr "can't install additional packages"
+    prnterr "can't install additional packages"
 fi
-pnrtok
+prntok
 
 # install Postfix
 prntinfo "installing Postfix"
@@ -162,7 +165,7 @@ rpm -e --nodeps sendmail sendmail-cf >> $log 2>&1
 yum -y install postfix >> $log 2>&1
 retval=$?
 if [ "${retval}" -ne 0 ]; then
-    pnrterr "can't install postfix"
+    prnterr "can't install postfix"
 fi
 
 systemctl enable postfix >> $log 2>&1
@@ -171,9 +174,9 @@ systemctl start postfix >> $log 2>&1
 psfxstts=$(systemctl is-active postfix)
 if [ "${psfxstts}" != "active" ]; then
     systemctl status postfix>> $log 2>&1
-    pnrterr "failed to start postfix"
+    prnterr "failed to start postfix"
 fi
-pnrtok
+prntok
 
 # download config files from git repository
 prntinfo "cloning files from git"
@@ -182,9 +185,9 @@ rm -rf ngxinstall
 git clone https://github.com/asfihani/ngxinstall.git >> $log 2>&1
 retval=$?
 if [ "${retval}" -ne 0 ]; then
-    pnrterr "unable to copy files from git"
+    prnterr "unable to copy files from git"
 fi
-pnrtok
+prntok
 
 # setup jailkit and account
 prntinfo "installing jailkit"
@@ -194,7 +197,7 @@ wget http://olivier.sessink.nl/jailkit/jailkit-2.19.tar.gz  >> $log 2>&1
 
 retval=$?
 if [ "${retval}" -ne 0 ]; then
-    pnrterr "unable to downlog jailkit from https://olivier.sessink.nl/jailkit"
+    prnterr "unable to downlog jailkit from https://olivier.sessink.nl/jailkit"
 fi
 
 if [ -f "jailkit-2.19.tar.gz" ]; then
@@ -204,7 +207,7 @@ if [ -f "jailkit-2.19.tar.gz" ]; then
     make >> $log 2>&1
     make install >> $log 2>&1
     cp -p /tmp/ngxinstall/config/jk_init.ini /etc/jailkit/jk_init.ini
-    pnrtok
+    prntok
 fi
 
 # setup chroot for account
@@ -222,9 +225,9 @@ if [ -d "/chroot/${username}" ]; then
     echo '<?php phpinfo(); ?>' | tee -a /chroot/${username}/home/${username}/public_html/info.php 
     chown -R ${username}: /chroot/${username}/home/${username}/{public_html,logs}
     chmod 755  /chroot/${username}/home/${username} /chroot/${username}/home/${username}/{public_html,logs}
-    pnrtok
+    prntok
 else
-    pnrterr "can't configure jailkit"
+    prnterr "can't configure jailkit"
 fi
 
 # install nginx
@@ -234,10 +237,10 @@ yum -y install nginx >> $log 2>&1
 
 retval=$?
 if [ "${retval}" -ne 0 ]; then
-    pnrterr "unable to install nginx"
+    prnterr "unable to install nginx"
 fi
 
-pnrtok
+prntok
 
 # configure nginx
 prntinfo "configuring nginx"
@@ -267,7 +270,7 @@ systemctl start nginx >> $log 2>&1
 ngxstts=$(systemctl is-active nginx)
 
 if [ "${ngxstts}" == "active" ]; then
-    pnrtok
+    prntok
 else
     systemctl status nginx >> $log 2>&1
     prnterr "failed to start nginx"
@@ -284,7 +287,7 @@ php-pecl-zip php-pspell php-soap php-tidy php-xml php-xmlrpc php-fpm >> $log 2>&
 
 retval=$?
 if [ "${retval}" -ne 0 ]; then
-    pnrterr "unable to install php"
+    prnterr "unable to install php"
 fi
 prntok
 
@@ -297,7 +300,7 @@ sed -i 's/^post_max_size =.*/post_max_size = 64M/g' /etc/php.ini
 #sed -i 's{^;date.timezone =.*{date.timezone = "Asia/Jakarta"{g' /etc/php.ini
 sed -i 's/^;opcache.revalidate_freq=2/opcache.revalidate_freq=60/g' /etc/php.d/10-opcache.ini
 sed -i 's/^;opcache.fast_shutdown=0/opcache.fast_shutdown=1/g' /etc/php.d/10-opcache.ini
-pnrtok
+prntok
 
 # configure php-fpm
 prntinfo "configuring php-fpm"
@@ -315,7 +318,7 @@ systemctl start php-fpm >> $log 2>&1
 fpmstts=$(systemctl is-active php-fpm)
 
 if [ "${fpmstts}" == "active" ]; then
-    pnrtok
+    prntok
 else
     systemctl status php-fpm >> $log 2>&1
     prnterr "failed to start php-fpm"
@@ -329,7 +332,7 @@ yum -y install MariaDB-server MariaDB-client MariaDB-compat MariaDB-shared >> $l
 
 retval=$?
 if [ "${retval}" -ne 0 ]; then
-    pnrterr "unable to install MariaDB"
+    prnterr "unable to install MariaDB"
 fi
 
 systemctl enable mariadb >> $log 2>&1
@@ -338,7 +341,7 @@ systemctl start mariadb >> $log 2>&1
 mrdbstts=$(systemctl is-active mariadb)
 
 if [ "${mrdbstts}" == "active" ]; then
-    pnrtok
+    prntok
 else
     systemctl status mariadb >> $log 2>&1
     prnterr "failed to start mariadb"
@@ -359,7 +362,7 @@ cat > ~/.my.cnf <<EOF
 [client]
 password = '${mysqlpass}'
 EOF
-pnrtok
+prntok
 
 # create MySQL database for Wordpress
 prntinfo "creating Wordpress database"
@@ -373,13 +376,13 @@ EOF
 
 mysql < /tmp/create.sql 
 rm -rf /tmp/create.sql
-pnrtok
+prntok
 
 # installing WPCLI
 prntinfo "installing wpcli"
 wget https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -O /usr/local/bin/wp >> $log 2>&1
 chmod 755 /usr/local/bin/wp
-pnrtok
+prntok
 
 # install Wordpress
 prntinfo "installing Wordpress"
@@ -390,7 +393,7 @@ sudo -u ${username} bash -c "/usr/local/bin/wp core download" >> $log 2>&1
 sudo -u ${username} bash -c "/usr/local/bin/wp core config --dbname=${username}_wp --dbuser=${username}_wp --dbpass=${wpdbpass} --dbhost=localhost --dbprefix=wp_" >> $log 2>&1
 sudo -u ${username} bash -c "/usr/local/bin/wp core install --url=${domainname} --title='Just another Wordpress site' --admin_user=${username} --admin_password=${wpadminpass} --admin_email=${email}" >> $log 2>&1
 sudo -u ${username} bash -c "/usr/local/bin/wp plugin install really-simple-ssl wp-super-cache" >> $log 2>&1
-pnrtok
+prntok
 
 # install letsencrypt certbot
 prntinfo "installing letsencrypt certbot"
@@ -398,9 +401,9 @@ yum -y install certbot >> $log 2>&1
 
 retval=$?
 if [ "${retval}" -ne 0 ]; then
-    pnrterr "unable to install letsencrypt certbot"
+    prnterr "unable to install letsencrypt certbot"
 fi
-pnrtok
+prntok
 
 # configuring letsencrypt
 prntinfo "configuring letsencrypt"
@@ -445,7 +448,7 @@ if [ "${domipaddr}" == "${svripaddr}" ]; then
         echo "0 0,12 * * * /usr/bin/python -c 'import random; import time; time.sleep(random.random() * 3600)' && /usr/bin/certbot renew -q --post-hook 'systemctl restart nginx'" > /tmp/le.cron
         crontab /tmp/le.cron
         rm -rf /tmp/le.cron
-        pnrtok
+        prntok
     
     else
         prntwarn "certbot can't issue certificate, check the log"
