@@ -38,7 +38,7 @@ prntwarn () {
 
 prnterr () {
     message=$1
-    printf "\n${red}${txtbld}[⛔ error] $message.${normal}\n\n"
+    printf "${red}${txtbld}[⛔ error] $message.${normal}\n\n"
     exit 1
 }
 
@@ -124,7 +124,7 @@ fi
 
 # whitelist port 80 and 443 if firewalld enabled
 if [ -x /usr/bin/firewall-cmd ]; then
-    status=$(firewall-cmd --state)
+    status=$(firewall-cmd --state 2>&1)
     if [ "${status}" == "running" ]; then
         firewall-cmd --zone=public --add-service=http > /dev/null 2>&1
         firewall-cmd --zone=public --add-service=https > /dev/null 2>&1
@@ -144,6 +144,7 @@ fi
 prntok
 
 prntinfo "installing Remi repo" 
+rpm -e --nodeps remi-release > $log 2>&1
 yum -y install http://rpms.remirepo.net/enterprise/remi-release-7.rpm >> $log 2>&1
 retval=$?
 if [ "${retval}" -ne 0 ]; then
@@ -206,7 +207,7 @@ if [ -f "jailkit-2.19.tar.gz" ]; then
     ./configure  >> $log 2>&1
     make >> $log 2>&1
     make install >> $log 2>&1
-    cp -p /tmp/ngxinstall/config/jk_init.ini /etc/jailkit/jk_init.ini
+    cat /tmp/ngxinstall/config/jk_init.ini >> /etc/jailkit/jk_init.ini
     prntok
 fi
 
