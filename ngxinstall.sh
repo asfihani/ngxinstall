@@ -1,42 +1,58 @@
 #!/bin/sh
-## vim: set expandtab sw=4 ts=4 sts=4:
-##
-## ngxinstall.sh
-##   © Copyright 2018 ServerPartners 
-##      http://serverpartners.net
-##
-## Simple shell script to install nginx with Wordpress, user is jailed 
-## using chroot setup to improve security. Send bug report to asfik@svrpnr.net.
-##
-
+# vim: set expandtab sw=4 ts=4 sts=4:
+#
+# ngxinstall.sh
+#
+# Simple shell script to install nginx with Wordpress, user jailed using chroot 
+# setup to improve security. Send bug report to asfik@svrpnr.net.
+#
+# © 2018 ServerPartners - http://serverpartners.net
+#
+# ############################################################################
 log=/root/ngxinstall.log
 
-red="$(tput setaf 1)"
-green="$(tput setaf 2)"
-yellow="$(tput setaf 3)"
-cyan="$(tput setaf 6)"
-normal="$(tput sgr0)"
+red=$(tput setaf 1)
+green=$(tput setaf 2)
+yellow=$(tput setaf 3)
+cyan=$(tput setaf 6)
+normal=$(tput sgr0)
+txtbld=$(tput bold)
+
+#
+prntinfo () {
+    message=$1
+    printf "${cyan}▣ ${normal}${message}..."
+}
+
+prntok () {
+    printf "${green}${txtbld}done ✔${normal}\n"
+}
+
+prntwarn () {
+    message=$1
+    printf "\n\n${yellow}${txtbld}[⚠ warn] $message.${normal}\n\n"
+}
+
+prnterr () {
+    message=$1
+    printf "\n\n${red}${txtbld}[⛔ error] $message.${normal}\n\n"
+    exit 1
+}
 
 # check if the script run as root
 curruid=$(id -u)
-if [ "${curruid}" -ne "0" ]; then
-    echo
-    printf "${red}⛔ ${cyan}Please switch to root account.${normal}\n\n"
-    exit 1
+if [ "${curruid}" -ne 0 ]; then
+    prnterr "please switch to root account"
 fi
 
 # check CentOS version
 if [ -f /etc/centos-release ]; then
     version=$(cut -d" " -f4 /etc/centos-release | cut -d "." -f1)
-    if [ "${version}" -ne "7" ]; then
-        echo
-        printf "${red}⛔ ${cyan}Sorry this script only work on CentOS 7.${normal}\n\n"
-        exit 1
+    if [ "${version}" -ne 7 ]; then
+        prnterr "sorry this script only work on CentOS 7"
     fi
 else
-    echo
-    printf "${red}⛔ ${cyan}Sorry this script only work on CentOS 7.${normal}\n\n"
-    exit 1
+    prnterr "sorry this script only work on CentOS 7"
 fi
 
 # print general usage
@@ -91,9 +107,7 @@ getent passwd ${username} > /dev/null 2&>1
 retval=$?
 
 if [ "${retval}" -eq 0 ]; then
-    echo
-    printf "${red}⛔ ${cyan}username ${username} exist.${normal}\n\n"
-    exit 1
+    prnterr "username ${username} exist"
 fi
 
 # just another counter
@@ -118,42 +132,70 @@ fi
 
 # install necessary packages and additional repositories
 echo
-printf "▣ ${cyan}installing EPEL repo...${normal}" 
+prntinfo "installing EPEL repo" 
 yum -y install epel-release > $log 2>&1
-printf "${green}done ✔${normal}\n"
-printf "▣ ${cyan}installing Remi repo...${normal}" 
+retval=$?
+if [ "${retval}" -ne 0 ]; then
+    pnrterr "can't install EPEL repo"
+fi
+pnrtok
+
+prntinfo "installing Remi repo" 
 yum -y install http://rpms.remirepo.net/enterprise/remi-release-7.rpm >> $log 2>&1
-printf "${green}done ✔${normal}\n"
-printf "▣ ${cyan}installing packages...${normal}" 
+retval=$?
+if [ "${retval}" -ne 0 ]; then
+    pnrterr "can't install remi repo"
+fi
+pnrtok
+
+prntinfo "installing packages" 
 yum -y install git wget vim-enhanced curl yum-utils gcc make unzip lsof telnet bind-utils shadow-utils sudo >> $log 2>&1
-printf "${green}done ✔${normal}\n"
+retval=$?
+if [ "${retval}" -ne 0 ]; then
+    pnrterr "can't install additional packages"
+fi
+pnrtok
 
 # install Postfix
-printf "▣ ${cyan}installing Postfix...${normal}"
+prntinfo "installing Postfix"
 rpm -e --nodeps sendmail sendmail-cf >> $log 2>&1
 yum -y install postfix >> $log 2>&1
+retval=$?
+if [ "${retval}" -ne 0 ]; then
+    pnrterr "can't install postfix"
+fi
+
 systemctl enable postfix >> $log 2>&1
 systemctl start postfix >> $log 2>&1
-printf "${green}done ✔${normal}\n"
+
+psfxstts=$(systemctl is-active postfix)
+if [ "${psfxstts}" != "active" ]; then
+    systemctl status postfix>> $log 2>&1
+    pnrterr "failed to start postfix"
+fi
+pnrtok
 
 # download config files from git repository
-printf "▣ ${cyan}cloning files from git...${normal}"
+prntinfo "cloning files from git"
 cd /tmp 
 rm -rf ngxinstall
 git clone https://github.com/asfihani/ngxinstall.git >> $log 2>&1
 retval=$?
 if [ "${retval}" -ne 0 ]; then
-    printf "${red}⛔ ${cyan}unable to copy files from git.${normal}\n\n"
-    exit 1
-else
-    printf "${green}done ✔${normal}\n"
+    pnrterr "unable to copy files from git"
 fi
+pnrtok
 
 # setup jailkit and account
-printf "▣ ${cyan}installing jailkit...${normal}"
+prntinfo "installing jailkit"
 cd /tmp
 rm -rf jailkit*
 wget http://olivier.sessink.nl/jailkit/jailkit-2.19.tar.gz  >> $log 2>&1
+
+retval=$?
+if [ "${retval}" -ne 0 ]; then
+    pnrterr "unable to downlog jailkit from https://olivier.sessink.nl/jailkit"
+fi
 
 if [ -f "jailkit-2.19.tar.gz" ]; then
     tar -xzvf jailkit-2.19.tar.gz  >> $log 2>&1
@@ -162,14 +204,11 @@ if [ -f "jailkit-2.19.tar.gz" ]; then
     make >> $log 2>&1
     make install >> $log 2>&1
     cp -p /tmp/ngxinstall/config/jk_init.ini /etc/jailkit/jk_init.ini
-    printf "${green}done ✔${normal}\n"
-else
-    printf "${red}⛔ ${cyan}unable to downlog jailkit from https://olivier.sessink.nl/jailkit/.${normal}\n\n"
-    exit 1
+    pnrtok
 fi
 
 # setup chroot for account
-printf "▣ ${cyan}configuring account...${normal}"
+prntinfo "configuring account"
 mkdir /chroot >> $log 2>&1
 password=$(</dev/urandom tr -dc '12345#%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
 adduser ${username}
@@ -183,17 +222,25 @@ if [ -d "/chroot/${username}" ]; then
     echo '<?php phpinfo(); ?>' | tee -a /chroot/${username}/home/${username}/public_html/info.php 
     chown -R ${username}: /chroot/${username}/home/${username}/{public_html,logs}
     chmod 755  /chroot/${username}/home/${username} /chroot/${username}/home/${username}/{public_html,logs}
-    printf "${green}done ✔${normal}\n"
+    pnrtok
 else
-    printf "${red}⛔ ${cyan}can't configure jailkit.${normal}\n\n"
-    exit 1
+    pnrterr "can't configure jailkit"
 fi
 
-# configure nginx
-printf "▣ ${cyan}configuring nginx...${normal}"
+# install nginx
+prntinfo "installing nginx"
 cp -p /tmp/ngxinstall/config/nginx.repo /etc/yum.repos.d/nginx.repo
 yum -y install nginx >> $log 2>&1
 
+retval=$?
+if [ "${retval}" -ne 0 ]; then
+    pnrterr "unable to install nginx"
+fi
+
+pnrtok
+
+# configure nginx
+prntinfo "configuring nginx"
 mv /etc/nginx/nginx.conf{,.orig}
 cp -p /tmp/ngxinstall/config/nginx.conf /etc/nginx/nginx.conf
 mkdir -p /etc/nginx/sites-enabled/ /etc/nginx/conf.d/ >> $log 2>&1
@@ -207,7 +254,7 @@ cp -p /tmp/ngxinstall/config/wp_super_cache.tpl /etc/nginx/conf.d/wp_super_cache
 
 openssl dhparam -dsaparam -out /etc/nginx/dhparam.pem 4096 >> $log 2>&1
 
-# remove apache if installed
+# disable apache if installed
 if rpm -q --quiet httpd; then 
     systemctl stop httpd >> $log 2>&1
     systemctl disable httpd >> $log 2>&1
@@ -217,18 +264,17 @@ fi
 systemctl enable nginx >> $log 2>&1
 systemctl start nginx >> $log 2>&1
 
-ngxstatus=$(systemctl is-active nginx)
+ngxstts=$(systemctl is-active nginx)
 
-if [ "${ngxstatus}" == "active" ]; then
-    printf "${green}done ✔${normal}\n"
+if [ "${ngxstts}" == "active" ]; then
+    pnrtok
 else
     systemctl status nginx >> $log 2>&1
-    printf "${red}⛔ ${cyan}failed to start nginx.${normal}\n\n"
-    exit 1
+    prnterr "failed to start nginx"
 fi
 
 # installing php 7.2
-printf "▣ ${cyan}installing PHP 7.2...${normal}"
+prntinfo "installing PHP"
 yum-config-manager --enable remi-php72 >> $log 2>&1
 
 yum -y install php php-mysqlnd php-curl php-simplexml \
@@ -236,6 +282,14 @@ php-devel php-gd php-json php-pecl-mcrypt php-mbstring php-opcache php-pear \
 php-pecl-apcu php-pecl-geoip php-pecl-json-post php-pecl-memcache php-pecl-xmldiff \
 php-pecl-zip php-pspell php-soap php-tidy php-xml php-xmlrpc php-fpm >> $log 2>&1
 
+retval=$?
+if [ "${retval}" -ne 0 ]; then
+    pnrterr "unable to install php"
+fi
+prntok
+
+# configuring php
+prntinfo "configuring PHP"
 sed -i 's/^max_execution_time =.*/max_execution_time = 300/g' /etc/php.ini
 sed -i 's/^memory_limit =.*/memory_limit = 256M/g' /etc/php.ini
 sed -i 's/^upload_max_filesize =.*/upload_max_filesize = 64M/g' /etc/php.ini
@@ -243,10 +297,10 @@ sed -i 's/^post_max_size =.*/post_max_size = 64M/g' /etc/php.ini
 #sed -i 's{^;date.timezone =.*{date.timezone = "Asia/Jakarta"{g' /etc/php.ini
 sed -i 's/^;opcache.revalidate_freq=2/opcache.revalidate_freq=60/g' /etc/php.d/10-opcache.ini
 sed -i 's/^;opcache.fast_shutdown=0/opcache.fast_shutdown=1/g' /etc/php.d/10-opcache.ini
-printf "${green}done ✔${normal}\n"
+pnrtok
 
 # configure php-fpm
-printf "▣ ${cyan}configuring php-fpm...${normal}"
+prntinfo "configuring php-fpm"
 mv /etc/php-fpm.d/www.conf{,.orig}
 touch /etc/php-fpm.d/www.conf
 
@@ -258,37 +312,40 @@ sed -i "s/%%username%%/${username}/g" /etc/php-fpm.d/${domainname}.conf
 systemctl enable php-fpm >> $log 2>&1
 systemctl start php-fpm >> $log 2>&1
 
-fpmtatus=$(systemctl is-active php-fpm)
+fpmstts=$(systemctl is-active php-fpm)
 
-if [ "${fpmtatus}" == "active" ]; then
-    printf "${green}done ✔${normal}\n"
+if [ "${fpmstts}" == "active" ]; then
+    pnrtok
 else
     systemctl status php-fpm >> $log 2>&1
-    printf "${red}⛔ ${cyan}failed to start php-fpm.${normal}\n\n"
-    exit 1
+    prnterr "failed to start php-fpm"
 fi
 
 # install MariaDB
-printf "▣ ${cyan}installing MariaDB...${normal}"
+prntinfo "installing MariaDB"
 cp -p /tmp/ngxinstall/config/mariadb.repo /etc/yum.repos.d/mariadb.repo
 
 yum -y install MariaDB-server MariaDB-client MariaDB-compat MariaDB-shared >> $log 2>&1
 
+retval=$?
+if [ "${retval}" -ne 0 ]; then
+    pnrterr "unable to install MariaDB"
+fi
+
 systemctl enable mariadb >> $log 2>&1
 systemctl start mariadb >> $log 2>&1
 
-mariadbstatus=$(systemctl is-active mariadb)
+mrdbstts=$(systemctl is-active mariadb)
 
-if [ "${mariadbstatus}" == "active" ]; then
-    printf "${green}done ✔${normal}\n"
+if [ "${mrdbstts}" == "active" ]; then
+    pnrtok
 else
     systemctl status mariadb >> $log 2>&1
-    printf "${red}⛔ ${cyan}failed to start mariadb.${normal}\n\n"
-    exit 1
+    prnterr "failed to start mariadb"
 fi
 
 # configure MariaDB
-printf "▣ ${cyan}configuring MariaDB...${normal}"
+prntinfo "configuring MariaDB"
 mysqlpass=$(</dev/urandom tr -dc '12345#%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
 mysqladmin -u root password "${mysqlpass}"
 
@@ -302,10 +359,10 @@ cat > ~/.my.cnf <<EOF
 [client]
 password = '${mysqlpass}'
 EOF
-printf "${green}done ✔${normal}\n"
+pnrtok
 
 # create MySQL database for Wordpress
-printf "▣ ${cyan}creating Wordpress database...${normal}"
+prntinfo "creating Wordpress database"
 wpdbpass=$(</dev/urandom tr -dc '12345#%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
 
 cat > /tmp/create.sql <<EOF
@@ -316,16 +373,16 @@ EOF
 
 mysql < /tmp/create.sql 
 rm -rf /tmp/create.sql
-printf "${green}done ✔${normal}\n"
+pnrtok
 
 # installing WPCLI
-printf "▣ ${cyan}installing wpcli...${normal}"
+prntinfo "installing wpcli"
 wget https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -O /usr/local/bin/wp >> $log 2>&1
 chmod 755 /usr/local/bin/wp
-printf "${green}done ✔${normal}\n"
+pnrtok
 
 # install Wordpress
-printf "▣ ${cyan}installing Wordpress...${normal}"
+prntinfo "installing Wordpress"
 cd /chroot/${username}/home/${username}/public_html
 wpadminpass=$(</dev/urandom tr -dc '12345#%qwertQWERTasdfgASDFGzxcvbZXCVB' | head -c16; echo "")
 
@@ -333,15 +390,20 @@ sudo -u ${username} bash -c "/usr/local/bin/wp core download" >> $log 2>&1
 sudo -u ${username} bash -c "/usr/local/bin/wp core config --dbname=${username}_wp --dbuser=${username}_wp --dbpass=${wpdbpass} --dbhost=localhost --dbprefix=wp_" >> $log 2>&1
 sudo -u ${username} bash -c "/usr/local/bin/wp core install --url=${domainname} --title='Just another Wordpress site' --admin_user=${username} --admin_password=${wpadminpass} --admin_email=${email}" >> $log 2>&1
 sudo -u ${username} bash -c "/usr/local/bin/wp plugin install really-simple-ssl wp-super-cache" >> $log 2>&1
-printf "${green}done ✔${normal}\n"
+pnrtok
 
 # install letsencrypt certbot
-printf "▣ ${cyan}installing letsencrypt certbot...${normal}"
+prntinfo "installing letsencrypt certbot"
 yum -y install certbot >> $log 2>&1
-printf "${green}done ✔${normal}\n"
+
+retval=$?
+if [ "${retval}" -ne 0 ]; then
+    pnrterr "unable to install letsencrypt certbot"
+fi
+pnrtok
 
 # configuring letsencrypt
-printf "▣ ${cyan}configuring letsencrypt...${normal}"
+prntinfo "configuring letsencrypt"
 
 domipaddr=$(dig +short ${domainname})
 svripaddr=$(curl -sSL http://cpanel.com/showip.cgi)
@@ -368,7 +430,7 @@ if [ "${domipaddr}" == "${svripaddr}" ]; then
         # activate ssl section in nginx config
         sed -i "s{^#{{g" /etc/nginx/sites-enabled/${domainname}.conf
 
-        # check if new configuration is fine
+        # check if new configuration is ok
         /usr/sbin/nginx -t >> $log 2>&1
         retval=$?
 
@@ -376,39 +438,39 @@ if [ "${domipaddr}" == "${svripaddr}" ]; then
             # restart nginx
             /usr/sbin/nginx -s reload >> $log 2>&1
         else
-            printf "${red}⛔ warning, nginx config seem broken, consider to check the log.${normal}\n"
+            prntwarn "nginx config seem broken, consider to check the log"
         fi
 
         # install certbot autorenew cron
         echo "0 0,12 * * * /usr/bin/python -c 'import random; import time; time.sleep(random.random() * 3600)' && /usr/bin/certbot renew -q --post-hook 'systemctl restart nginx'" > /tmp/le.cron
         crontab /tmp/le.cron
         rm -rf /tmp/le.cron
-        printf "${green}done ✔${normal}\n"
+        pnrtok
     
     else
-        printf "${red}error ⛔, certbot can't issue certificate, check the log.${normal}\n"
+        prntwarn "certbot can't issue certificate, check the log"
     fi
 
 else
-    printf "${red}skipped ⛔ (IP address probably not pointed to this server).${normal}\n"
+    prntwarn "skipped (IP address probably not pointed to this server)"
 fi
 
 # print all details
 echo
 echo "==========================================================================="
 echo "SFTP"
-echo "Domain name   : ${red}${domainname}${normal}"
-echo "Username      : ${cyan}${username}${normal}"
-echo "Password      : ${green}${password}${normal}"
-echo "Document root : ${yellow}/chroot/${username}/home/${username}/public_html${normal}"
+echo "Domain name   : ${txtbld}${red}${domainname}${normal}"
+echo "Username      : ${txtbld}${cyan}${username}${normal}"
+echo "Password      : ${txtbld}${green}${password}${normal}"
+echo "Document root : ${txtbld}${yellow}/chroot/${username}/home/${username}/public_html${normal}"
 echo
 echo "Wordpress"
-echo "Username      : ${cyan}${username}${normal}"
-echo "Password      : ${green}${wpadminpass}${normal}"
-echo "URL           : ${yellow}http://${domainname}/wp-admin/${normal}"
+echo "Username      : ${txtbld}${cyan}${username}${normal}"
+echo "Password      : ${txtbld}${green}${wpadminpass}${normal}"
+echo "URL           : ${txtbld}${yellow}http://${domainname}/wp-admin/${normal}"
 echo
-echo "Don't forget to enable Really Simple SSL plugin if letsencrypt available"
-echo "and configure WP Super Cache as well. Enjoy!"
+echo "Don't forget to enable really-simple-ssl plugin when letsencrypt available,"
+echo "and configure wp-super-cache as well. Enjoy!"
 echo "==========================================================================="
 echo
 
@@ -418,4 +480,4 @@ rm -rf /tmp/ngxinstall /tmp/jailkit*
 # exit and print duration
 timeend=$(date +%s)
 duration=$(echo $((timeend-timestart)) | awk '{print int($1/60)"m "int($1%60)"s"}')
-printf "${green}▣▣▣ ${normal}time spent: ${yellow}${duration}${green} ▣▣▣${normal}\n\n"
+printf "${green}▣▣▣ ${normal}time spent: ${txtbld}${yellow}${duration}${green} ▣▣▣${normal}\n\n"
