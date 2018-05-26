@@ -1,14 +1,8 @@
 #!/bin/sh
 # vim: set expandtab sw=4 ts=4 sts=4:
 #
-# ngxinstall.sh
-#
 # Simple shell script to install nginx with Wordpress, user jailed using chroot 
 # setup to improve security. Send bug report to asfik@svrpnr.net.
-#
-# © 2018 ServerPartners - http://serverpartners.net
-#
-# ############################################################################
 
 # define log path
 log=/root/ngxinstall.log
@@ -19,7 +13,7 @@ green=$(tput setaf 2)
 yellow=$(tput setaf 3)
 cyan=$(tput setaf 6)
 normal=$(tput sgr0)
-txtbld=$(tput bold)
+bold=$(tput bold)
 
 # functions to format text
 prntinfo () {
@@ -28,17 +22,17 @@ prntinfo () {
 }
 
 prntok () {
-    printf "${green}${txtbld}done ✔${normal}\n"
+    printf "${green}${bold}done ✔${normal}\n"
 }
 
 prntwarn () {
     message=$1
-    printf "${yellow}${txtbld}[⚠ warn] $message.${normal}\n\n"
+    printf "${yellow}${bold}[⚠ warn] $message.${normal}\n\n"
 }
 
 prnterr () {
     message=$1
-    printf "${red}${txtbld}[⛔ error] $message.${normal}\n\n"
+    printf "${red}${bold}[⛔ error] $message.${normal}\n\n"
     exit 1
 }
 
@@ -50,8 +44,8 @@ fi
 
 # check CentOS version
 if [ -f /etc/centos-release ]; then
-    version=$(cut -d" " -f4 /etc/centos-release | cut -d "." -f1)
-    if [ "${version}" -ne 7 ]; then
+    centver=$(awk -F'release ' '{print $2}' /etc/centos-release | cut -d "." -f1)
+    if [ "${centver}" -ne 7 ]; then
         prnterr "sorry this script only work on CentOS 7"
     fi
 else
@@ -102,10 +96,6 @@ while [ "$1" != "" ]; do
 done
 
 # check if the username exist
-if [ ! -x /usr/bin/getent ]; then
-    yum -y -q install glibc-common
-fi
-
 getent passwd ${username} > /dev/null 2&>1
 retval=$?
 
@@ -113,7 +103,7 @@ if [ "${retval}" -eq 0 ]; then
     prnterr "username ${username} exist"
 fi
 
-# just another counter
+# just another counter :)
 timestart=$(date +%s)
 
 # disable selinux
@@ -124,8 +114,8 @@ fi
 
 # whitelist port 80 and 443 if firewalld enabled
 if [ -x /usr/bin/firewall-cmd ]; then
-    status=$(firewall-cmd --state 2>&1)
-    if [ "${status}" == "running" ]; then
+    fwstatus=$(systemctl is-active firewalld)
+    if [ "${fwstatus}" == "active" ]; then
         firewall-cmd --zone=public --add-service=http > /dev/null 2>&1
         firewall-cmd --zone=public --add-service=https > /dev/null 2>&1
         firewall-cmd --zone=public --permanent --add-service=http > /dev/null 2>&1
@@ -138,33 +128,46 @@ echo
 prntinfo "installing EPEL repo" 
 yum -y install epel-release > $log 2>&1
 retval=$?
+
 if [ "${retval}" -ne 0 ]; then
     prnterr "can't install EPEL repo"
 fi
+
 prntok
 
-prntinfo "installing Remi repo" 
-rpm -e --nodeps remi-release > $log 2>&1
-yum -y install http://rpms.remirepo.net/enterprise/remi-release-7.rpm >> $log 2>&1
+# for some reason Remi return non zero exit value if installed, so we need to check 
+rpm --quiet -q remi-release
 retval=$?
+
 if [ "${retval}" -ne 0 ]; then
-    prnterr "can't install remi repo"
+    prntinfo "installing Remi repo" 
+    yum -y install http://rpms.remirepo.net/enterprise/remi-release-7.rpm >> $log 2>&1
+    retval=$?
+
+    if [ "${retval}" -ne 0 ]; then
+        prnterr "can't install remi repo"
+    fi
+
+    prntok
 fi
-prntok
 
 prntinfo "installing packages" 
 yum -y install git wget vim-enhanced curl yum-utils gcc make unzip lsof telnet bind-utils shadow-utils sudo >> $log 2>&1
 retval=$?
+
 if [ "${retval}" -ne 0 ]; then
     prnterr "can't install additional packages"
 fi
+
 prntok
 
 # install Postfix
 prntinfo "installing Postfix"
+# remove installed sendmail binary, sorry Eric :)
 rpm -e --nodeps sendmail sendmail-cf >> $log 2>&1
 yum -y install postfix >> $log 2>&1
 retval=$?
+
 if [ "${retval}" -ne 0 ]; then
     prnterr "can't install postfix"
 fi
@@ -173,10 +176,12 @@ systemctl enable postfix >> $log 2>&1
 systemctl start postfix >> $log 2>&1
 
 psfxstts=$(systemctl is-active postfix)
+
 if [ "${psfxstts}" != "active" ]; then
     systemctl status postfix>> $log 2>&1
     prnterr "failed to start postfix"
 fi
+
 prntok
 
 # download config files from git repository
@@ -185,9 +190,11 @@ cd /tmp
 rm -rf ngxinstall
 git clone https://github.com/asfihani/ngxinstall.git >> $log 2>&1
 retval=$?
+
 if [ "${retval}" -ne 0 ]; then
     prnterr "unable to copy files from git"
 fi
+
 prntok
 
 # setup jailkit and account
@@ -195,10 +202,10 @@ prntinfo "installing jailkit"
 cd /tmp
 rm -rf jailkit*
 wget http://olivier.sessink.nl/jailkit/jailkit-2.19.tar.gz  >> $log 2>&1
-
 retval=$?
+
 if [ "${retval}" -ne 0 ]; then
-    prnterr "unable to downlog jailkit from https://olivier.sessink.nl/jailkit"
+    prnterr "unable to download jailkit from https://olivier.sessink.nl/jailkit"
 fi
 
 if [ -f "jailkit-2.19.tar.gz" ]; then
@@ -208,6 +215,7 @@ if [ -f "jailkit-2.19.tar.gz" ]; then
     make >> $log 2>&1
     make install >> $log 2>&1
     cat /tmp/ngxinstall/config/jk_init.ini >> /etc/jailkit/jk_init.ini
+
     prntok
 fi
 
@@ -222,10 +230,12 @@ mkdir -p /chroot/${username}
 if [ -d "/chroot/${username}" ]; then
     jk_init -j /chroot/${username} basicshell editors extendedshell netutils ssh sftp scp basicid >> $log 2>&1
     jk_jailuser -s /bin/bash -m -j /chroot/${username} ${username} >> $log 2>&1
+    
     mkdir -p /chroot/${username}/home/${username}/{public_html,logs}
     echo '<?php phpinfo(); ?>' > /chroot/${username}/home/${username}/public_html/info.php 
     chown -R ${username}: /chroot/${username}/home/${username}/{public_html,logs}
     chmod 755  /chroot/${username}/home/${username} /chroot/${username}/home/${username}/{public_html,logs}
+
     prntok
 else
     prnterr "can't configure jailkit"
@@ -235,8 +245,8 @@ fi
 prntinfo "installing nginx"
 cp -p /tmp/ngxinstall/config/nginx.repo /etc/yum.repos.d/nginx.repo
 yum -y install nginx >> $log 2>&1
-
 retval=$?
+
 if [ "${retval}" -ne 0 ]; then
     prnterr "unable to install nginx"
 fi
@@ -259,7 +269,10 @@ cp -p /tmp/ngxinstall/config/wp_super_cache.tpl /etc/nginx/conf.d/wp_super_cache
 openssl dhparam -dsaparam -out /etc/nginx/dhparam.pem 4096 >> $log 2>&1
 
 # disable apache if installed
-if rpm -q --quiet httpd; then 
+rpm -q --quiet httpd
+retval=$?
+
+if [ "${retval}" -ne 0 ]; then
     systemctl stop httpd >> $log 2>&1
     systemctl disable httpd >> $log 2>&1
 fi
@@ -290,10 +303,12 @@ retval=$?
 if [ "${retval}" -ne 0 ]; then
     prnterr "unable to install php"
 fi
+
 prntok
 
 # configuring php
 prntinfo "configuring PHP"
+
 sed -i 's/^max_execution_time =.*/max_execution_time = 300/g' /etc/php.ini
 sed -i 's/^memory_limit =.*/memory_limit = 256M/g' /etc/php.ini
 sed -i 's/^upload_max_filesize =.*/upload_max_filesize = 64M/g' /etc/php.ini
@@ -301,6 +316,7 @@ sed -i 's/^post_max_size =.*/post_max_size = 64M/g' /etc/php.ini
 #sed -i 's{^;date.timezone =.*{date.timezone = "Asia/Jakarta"{g' /etc/php.ini
 sed -i 's/^;opcache.revalidate_freq=2/opcache.revalidate_freq=60/g' /etc/php.d/10-opcache.ini
 sed -i 's/^;opcache.fast_shutdown=0/opcache.fast_shutdown=1/g' /etc/php.d/10-opcache.ini
+
 prntok
 
 # configure php-fpm
@@ -363,6 +379,9 @@ cat > ~/.my.cnf <<EOF
 [client]
 password = '${mysqlpass}'
 EOF
+
+chmod 600 ~/.my.cnf
+
 prntok
 
 # create MySQL database for Wordpress
@@ -377,12 +396,20 @@ EOF
 
 mysql < /tmp/create.sql 
 rm -rf /tmp/create.sql
+
 prntok
 
 # installing WPCLI
 prntinfo "installing wpcli"
 wget https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -O /usr/local/bin/wp >> $log 2>&1
+retval=$?
+
+if [ "${retval}" -ne 0 ]; then
+    prnterr "unable to download wpcli"
+fi
+
 chmod 755 /usr/local/bin/wp
+
 prntok
 
 # install Wordpress
@@ -399,11 +426,12 @@ prntok
 # install letsencrypt certbot
 prntinfo "installing letsencrypt certbot"
 yum -y install certbot >> $log 2>&1
-
 retval=$?
+
 if [ "${retval}" -ne 0 ]; then
     prnterr "unable to install letsencrypt certbot"
 fi
+
 prntok
 
 # configuring letsencrypt
@@ -435,8 +463,8 @@ if [ "${domipaddr}" == "${svripaddr}" ]; then
     # request certificate
     webroot="/chroot/${username}/home/${username}/public_html"
     certbot certonly --webroot -w ${webroot} ${domargs} ${extraargs}>> $log 2>&1
-
     retval=$?
+
     # check if certbot successfully issue certificate
     if [ "${retval}" -eq 0 ]; then
     
@@ -458,6 +486,7 @@ if [ "${domipaddr}" == "${svripaddr}" ]; then
         echo "0 0,12 * * * /usr/bin/python -c 'import random; import time; time.sleep(random.random() * 3600)' && /usr/bin/certbot renew -q --post-hook 'systemctl restart nginx'" > /tmp/le.cron
         crontab /tmp/le.cron
         rm -rf /tmp/le.cron
+
         prntok
     
     else
@@ -472,15 +501,15 @@ fi
 echo
 echo "==========================================================================="
 echo "SFTP"
-echo "Domain name   : ${txtbld}${red}${domainname}${normal}"
-echo "Username      : ${txtbld}${cyan}${username}${normal}"
-echo "Password      : ${txtbld}${green}${password}${normal}"
-echo "Document root : ${txtbld}${yellow}${webroot}${normal}"
+echo "Domain name   : ${bold}${red}${domainname}${normal}"
+echo "Username      : ${bold}${cyan}${username}${normal}"
+echo "Password      : ${bold}${green}${password}${normal}"
+echo "Document root : ${bold}${yellow}${webroot}${normal}"
 echo
 echo "Wordpress"
-echo "Username      : ${txtbld}${cyan}${username}${normal}"
-echo "Password      : ${txtbld}${green}${wpadminpass}${normal}"
-echo "URL           : ${txtbld}${yellow}http://${domainname}/wp-admin/${normal}"
+echo "Username      : ${bold}${cyan}${username}${normal}"
+echo "Password      : ${bold}${green}${wpadminpass}${normal}"
+echo "URL           : ${bold}${yellow}http://${domainname}/wp-admin/${normal}"
 echo
 echo "Don't forget to enable really-simple-ssl plugin when letsencrypt available,"
 echo "and configure wp-super-cache as well. Enjoy!"
@@ -493,4 +522,4 @@ rm -rf /tmp/ngxinstall /tmp/jailkit*
 # exit and print duration
 timeend=$(date +%s)
 duration=$(echo $((timeend-timestart)) | awk '{print int($1/60)"m "int($1%60)"s"}')
-printf "${green}▣▣▣ ${normal}time spent: ${txtbld}${yellow}${duration}${green} ▣▣▣${normal}\n\n"
+printf "${green}▣▣▣ ${normal}time spent: ${bold}${yellow}${duration}${green} ▣▣▣${normal}\n\n"
