@@ -1,10 +1,17 @@
 # http://downloads.mariadb.org/mariadb/repositories/
+[mariadb103]
+name = MariaDB
+baseurl = http://yum.mariadb.org/10.3/centos7-amd64
+gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
+gpgcheck=1
+enabled=1
+
 [mariadb102]
 name = MariaDB
 baseurl = http://yum.mariadb.org/10.2/centos7-amd64
 gpgkey=https://yum.mariadb.org/RPM-GPG-KEY-MariaDB
 gpgcheck=1
-enabled=1
+enabled=0
 
 [mariadb101]
 name = MariaDB
